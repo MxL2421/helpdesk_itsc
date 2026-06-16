@@ -1,13 +1,38 @@
 from django.db import models
+from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
 
 
-class Usuario(models.Model):
+class UsuarioManager(BaseUserManager):
+    def create_user(self, correo, password=None, **extra_fields):
+        if not correo:
+            raise ValueError('El correo es obligatorio')
+        correo = self.normalize_email(correo)
+        user = self.model(correo=correo, **extra_fields)
+        user.set_password(password)
+        user.save(using=self._db)
+        return user
+
+    def create_superuser(self, correo, password=None, **extra_fields):
+        extra_fields.setdefault('rol', 'administrador')
+        extra_fields.setdefault('is_staff', True)
+        extra_fields.setdefault('is_superuser', True)
+        return self.create_user(correo, password, **extra_fields)
+
+
+class Usuario(AbstractBaseUser, PermissionsMixin):
     ROL_CHOICES = [
         ('administrador', 'Administrador'),
         ('tecnico', 'Técnico'),
         ('estudiante', 'Estudiante'),
         ('maestro', 'Maestro'),
     ]
+
+    DOMINIOS_ROL = {
+        'administrador': '@adm.itsc.edu.do',
+        'tecnico': '@tec.itsc.edu.do',
+        'estudiante': '@est.itsc.edu.do',
+        'maestro': '@doc.itsc.edu.do',
+    }
 
     nombre = models.CharField(max_length=100)
     apellido = models.CharField(max_length=100)
@@ -16,13 +41,22 @@ class Usuario(models.Model):
     carrera = models.CharField(max_length=150, null=True, blank=True)
     rol = models.CharField(max_length=20, choices=ROL_CHOICES)
     activo = models.BooleanField(default=True)
+    is_staff = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
+
+    USERNAME_FIELD = 'correo'
+    REQUIRED_FIELDS = ['nombre', 'apellido', 'rol']
+
+    objects = UsuarioManager()
 
     class Meta:
         db_table = 'usuario'
 
     def __str__(self):
         return f'{self.nombre} {self.apellido} ({self.rol})'
+
+    def get_full_name(self):
+        return f'{self.nombre} {self.apellido}'
 
 
 class Categoria(models.Model):
