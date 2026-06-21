@@ -1,0 +1,11 @@
+<h1>Crear Ticket</h1>
+ 
+<form method="post">
+
+    {% csrf_token %}
+
+    {{ form.as_p }}
+<button type="submit">Crear</button>
+<a href="{% url 'lista_tickets' %}">Cancelar</a>
+</form>
+ 

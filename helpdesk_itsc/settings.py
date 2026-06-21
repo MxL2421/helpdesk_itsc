@@ -78,9 +78,9 @@ DATABASES = {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': 'helpdesk_itsc_db',
         'USER': 'root',
-        'PASSWORD': 'MySQLRoot1234#$',
+        'PASSWORD': '1234567',
         'HOST': 'localhost',
-        'PORT': '3308',
+        'PORT': '3306',
     }
 }
 
