@@ -134,3 +134,5 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 # Gestión de usuarios de Django 
 AUTH_USER_MODEL = 'core.Usuario'
+
+LOGIN_URL = '/login/'
