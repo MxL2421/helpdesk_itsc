@@ -5,6 +5,8 @@ from .forms import TicketForm
 from .models import Ticket
 from django.contrib.auth import login, logout
 from .forms import LoginForm
+from django.shortcuts import get_object_or_404
+from django.http import HttpResponseForbidden
 
 
 @login_required
@@ -30,6 +32,20 @@ def lista_tickets(request):
         tickets = Ticket.objects.filter(creador=request.user)
 
     return render(request, 'tickets/lista.html', {'tickets': tickets})
+
+@login_required
+def detalle_ticket(request, ticket_id):
+    ticket = get_object_or_404(Ticket, id=ticket_id)
+    user = request.user
+
+    es_creador = ticket.creador == user
+    es_tecnico_o_admin = user.rol in ['tecnico', 'administrador']
+    esta_etiquetado = ticket.ticketetiquetado_set.filter(usuario=user).exists()
+
+    if not (es_creador or es_tecnico_o_admin or esta_etiquetado):
+        return HttpResponseForbidden('No tienes permiso para ver este ticket.')
+
+    return render(request, 'tickets/detalle.html', {'ticket': ticket})
 
 def login_view(request):
     if request.method == 'POST':
