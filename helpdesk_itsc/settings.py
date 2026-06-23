@@ -14,8 +14,11 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 # Para cargar la configuración de la db
 import os
 from dotenv import load_dotenv
-
 from pathlib import Path
+
+
+# Carga las variables de entorno desde el archivo .env
+load_dotenv()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -141,6 +144,3 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 AUTH_USER_MODEL = 'core.Usuario'
 
 LOGIN_URL = '/login/'
-
-# Carga las variables de entorno desde el archivo .env
-load_dotenv()

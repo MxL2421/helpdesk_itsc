@@ -7,4 +7,6 @@ urlpatterns = [
     path('logout/', views.logout_view, name='logout'),
     path('tickets/crear/', views.crear_ticket, name='crear_ticket'),
     path('tickets/', views.lista_tickets, name='lista_tickets'),
+    path('tickets/<int:ticket_id>/', views.detalle_ticket, name='detalle_ticket'),
+    path('tickets/<int:ticket_id>/autoasignar/', views.autoasignar_ticket, name='autoasignar_ticket'),
 ]

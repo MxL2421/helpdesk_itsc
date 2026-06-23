@@ -7,6 +7,8 @@ from django.contrib.auth import login, logout
 from .forms import LoginForm
 from django.shortcuts import get_object_or_404
 from django.http import HttpResponseForbidden
+from django.contrib import messages
+
 
 
 @login_required
@@ -33,6 +35,7 @@ def lista_tickets(request):
 
     return render(request, 'tickets/lista.html', {'tickets': tickets})
 
+# Verificar que el ticket existe y quien abre el enlace sea un usuario etiquetado, admin o técnico
 @login_required
 def detalle_ticket(request, ticket_id):
     ticket = get_object_or_404(Ticket, id=ticket_id)
@@ -46,6 +49,7 @@ def detalle_ticket(request, ticket_id):
         return HttpResponseForbidden('No tienes permiso para ver este ticket.')
 
     return render(request, 'tickets/detalle.html', {'ticket': ticket})
+
 
 def login_view(request):
     if request.method == 'POST':
@@ -63,6 +67,26 @@ def login_view(request):
 
     return render(request, 'auth/login.html', {'form': form})
 
+# Un ticket solo puede tomarlo un técnico si este no ha sido asignado
+@login_required
+def autoasignar_ticket(request, ticket_id):
+    ticket = get_object_or_404(Ticket, id=ticket_id)
+
+    if request.user.rol != 'tecnico':
+        return HttpResponseForbidden('Solo los técnicos pueden autoasignarse tickets.')
+
+    if ticket.tecnico is not None:
+        messages.error(request, 'Este ticket ya tiene un técnico asignado.')
+        return redirect('detalle_ticket', ticket_id=ticket.id)
+
+    ticket.tecnico = request.user
+    ticket.save()
+
+    messages.success(request, 'Te has autoasignado el ticket correctamente.')
+    return redirect('detalle_ticket', ticket_id=ticket.id)
+
+
+# Controla el Logout
 
 def logout_view(request):
     logout(request)
