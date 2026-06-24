@@ -1,13 +1,12 @@
 # Create your views here.
 from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
-from .forms import TicketForm
-from .models import Ticket
+from .forms import TicketForm, ActualizarTicketForm, LoginForm
 from django.contrib.auth import login, logout
-from .forms import LoginForm
 from django.shortcuts import get_object_or_404
 from django.http import HttpResponseForbidden
 from django.contrib import messages
+from .models import Ticket, HistorialTicket
 
 
 
@@ -84,6 +83,49 @@ def autoasignar_ticket(request, ticket_id):
 
     messages.success(request, 'Te has autoasignado el ticket correctamente.')
     return redirect('detalle_ticket', ticket_id=ticket.id)
+
+
+# Solo el técnico asignado puede actualizar la prioridad y el estado del ticket
+
+@login_required
+def actualizar_ticket(request, ticket_id):
+    ticket = get_object_or_404(Ticket, id=ticket_id)
+
+    if ticket.tecnico != request.user:
+        return HttpResponseForbidden('Solo el técnico asignado puede actualizar este ticket.')
+
+    if request.method == 'POST':
+        estado_anterior = ticket.estado
+        prioridad_anterior = ticket.prioridad
+
+        form = ActualizarTicketForm(request.POST, instance=ticket)
+        if form.is_valid():
+            ticket_actualizado = form.save()
+
+            if estado_anterior != ticket_actualizado.estado:
+                HistorialTicket.objects.create(
+                    campo='estado',
+                    valor_anterior=estado_anterior,
+                    valor_nuevo=ticket_actualizado.estado,
+                    ticket=ticket_actualizado,
+                    usuario=request.user
+                )
+
+            if prioridad_anterior != ticket_actualizado.prioridad:
+                HistorialTicket.objects.create(
+                    campo='prioridad',
+                    valor_anterior=prioridad_anterior,
+                    valor_nuevo=ticket_actualizado.prioridad,
+                    ticket=ticket_actualizado,
+                    usuario=request.user
+                )
+
+            messages.success(request, 'Ticket actualizado correctamente.')
+            return redirect('detalle_ticket', ticket_id=ticket.id)
+    else:
+        form = ActualizarTicketForm(instance=ticket)
+
+    return render(request, 'tickets/actualizar.html', {'form': form, 'ticket': ticket})
 
 
 # Controla el Logout

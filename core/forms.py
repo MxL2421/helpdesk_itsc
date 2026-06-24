@@ -13,3 +13,9 @@ class TicketForm(forms.ModelForm):
 
 class LoginForm(AuthenticationForm):
     username = forms.EmailField(label='Correo institucional')
+
+
+class ActualizarTicketForm(forms.ModelForm):
+    class Meta:
+        model = Ticket
+        fields = ['estado', 'prioridad']
