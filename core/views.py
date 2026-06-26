@@ -1,7 +1,8 @@
 # Create your views here.
 from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
-from .forms import TicketForm, ActualizarTicketForm, LoginForm, ReasignarTicketForm
+from django.utils import timezone
+from .forms import TicketForm, ActualizarTicketForm, LoginForm, ReasignarTicketForm, AdjuntoFormSet
 from django.contrib.auth import login, logout
 from django.shortcuts import get_object_or_404
 from django.http import HttpResponseForbidden
@@ -18,12 +19,23 @@ def crear_ticket(request):
             ticket = form.save(commit=False)
             ticket.creador = request.user
             ticket.save()
+
+            formset = AdjuntoFormSet(request.POST, request.FILES, instance=ticket)
+            if formset.is_valid():
+                for adjunto_form in formset:
+                    if adjunto_form.cleaned_data.get('ruta'):
+                        adjunto = adjunto_form.save(commit=False)
+                        adjunto.ticket = ticket
+                        adjunto.nombre_archivo = adjunto.ruta.name
+                        adjunto.tipo_mime = adjunto.ruta.file.content_type if hasattr(adjunto.ruta.file, 'content_type') else 'desconocido'
+                        adjunto.save()
+
             return redirect('lista_tickets')
     else:
         form = TicketForm()
+        formset = AdjuntoFormSet()
 
-    return render(request, 'tickets/crear.html', {'form': form})
-
+    return render(request, 'tickets/crear.html', {'form': form, 'formset': formset})
 
 @login_required
 def lista_tickets(request):
@@ -103,7 +115,12 @@ def actualizar_ticket(request, ticket_id):
 
         form = ActualizarTicketForm(request.POST, instance=ticket)
         if form.is_valid():
-            ticket_actualizado = form.save()
+            ticket_actualizado = form.save(commit=False)
+
+            if estado_anterior != ticket_actualizado.estado and ticket_actualizado.estado == 'cerrado':
+                ticket_actualizado.fecha_cierre = timezone.now()
+
+            ticket_actualizado.save()
 
             if estado_anterior != ticket_actualizado.estado:
                 HistorialTicket.objects.create(
@@ -129,6 +146,46 @@ def actualizar_ticket(request, ticket_id):
         form = ActualizarTicketForm(instance=ticket)
 
     return render(request, 'tickets/actualizar.html', {'form': form, 'ticket': ticket})
+
+# Solo el administrador puede reabrir tickets y solo se pueden reabrir tickets 
+@login_required
+def reabrir_ticket(request, ticket_id):
+    ticket = get_object_or_404(Ticket, id=ticket_id)
+
+    if request.user.rol != 'administrador':
+        return HttpResponseForbidden('Solo el administrador puede reabrir tickets.')
+
+    if request.method != 'POST':
+        return HttpResponseForbidden('Método no permitido.')
+
+    if ticket.estado != 'cerrado':
+        messages.error(request, 'Solo se pueden reabrir tickets cerrados.')
+        return redirect('detalle_ticket', ticket_id=ticket.id)
+
+    ultimo_cambio_estado = HistorialTicket.objects.filter(
+        ticket=ticket,
+        campo='estado'
+    ).order_by('-fecha').first()
+
+    estado_anterior = ultimo_cambio_estado.valor_anterior if ultimo_cambio_estado else 'nuevo'
+
+    estado_cerrado = ticket.estado
+    ticket.estado = estado_anterior
+    ticket.fecha_cierre = None
+    ticket.save()
+
+    HistorialTicket.objects.create(
+        campo='estado',
+        valor_anterior=estado_cerrado,
+        valor_nuevo=estado_anterior,
+        ticket=ticket,
+        usuario=request.user
+    )
+
+    messages.success(request, f'Ticket reabierto, vuelve al estado: {ticket.get_estado_display()}.')
+    return redirect('detalle_ticket', ticket_id=ticket.id)
+
+# Solo el admin puede reasignar tickets
 
 @login_required
 def reasignar_ticket(request, ticket_id):
