@@ -1,7 +1,7 @@
 # Create your views here.
 from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
-from .forms import TicketForm, ActualizarTicketForm, LoginForm
+from .forms import TicketForm, ActualizarTicketForm, LoginForm, ReasignarTicketForm
 from django.contrib.auth import login, logout
 from django.shortcuts import get_object_or_404
 from django.http import HttpResponseForbidden
@@ -69,6 +69,9 @@ def login_view(request):
 # Un ticket solo puede tomarlo un técnico si este no ha sido asignado
 @login_required
 def autoasignar_ticket(request, ticket_id):
+    if request.method != 'POST':
+        return HttpResponseForbidden('Método no permitido.')
+
     ticket = get_object_or_404(Ticket, id=ticket_id)
 
     if request.user.rol != 'tecnico':
@@ -126,6 +129,36 @@ def actualizar_ticket(request, ticket_id):
         form = ActualizarTicketForm(instance=ticket)
 
     return render(request, 'tickets/actualizar.html', {'form': form, 'ticket': ticket})
+
+@login_required
+def reasignar_ticket(request, ticket_id):
+    ticket = get_object_or_404(Ticket, id=ticket_id)
+
+    if request.user.rol != 'administrador':
+        return HttpResponseForbidden('Solo el administrador puede reasignar tickets.')
+
+    tecnico_anterior = ticket.tecnico
+
+    if request.method == 'POST':
+        form = ReasignarTicketForm(request.POST, instance=ticket)
+        if form.is_valid():
+            ticket_actualizado = form.save()
+
+            if tecnico_anterior != ticket_actualizado.tecnico:
+                HistorialTicket.objects.create(
+                    campo='tecnico',
+                    valor_anterior=str(tecnico_anterior) if tecnico_anterior else 'Sin asignar',
+                    valor_nuevo=str(ticket_actualizado.tecnico) if ticket_actualizado.tecnico else 'Sin asignar',
+                    ticket=ticket_actualizado,
+                    usuario=request.user
+                )
+
+            messages.success(request, 'Técnico reasignado correctamente.')
+            return redirect('detalle_ticket', ticket_id=ticket.id)
+    else:
+        form = ReasignarTicketForm(instance=ticket)
+
+    return render(request, 'tickets/reasignar.html', {'form': form, 'ticket': ticket})
 
 
 # Controla el Logout

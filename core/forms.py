@@ -1,5 +1,5 @@
 from django import forms
-from .models import Ticket
+from .models import Ticket, Usuario
 from django.contrib.auth.forms import AuthenticationForm
 from django import forms
 
@@ -19,3 +19,12 @@ class ActualizarTicketForm(forms.ModelForm):
     class Meta:
         model = Ticket
         fields = ['estado', 'prioridad']
+
+class ReasignarTicketForm(forms.ModelForm):
+    class Meta:
+        model = Ticket
+        fields = ['tecnico']
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['tecnico'].queryset = Usuario.objects.filter(rol='tecnico', activo=True)
