@@ -1,9 +1,41 @@
-<h1>Mis Tickets</h1>
- 
-<a href="{% url 'crear_ticket' %}">Crear nuevo ticket</a>
- 
-<ul>
-{% for ticket in tickets %}
-<li>{{ ticket.titulo }} - {{ ticket.estado }} - {{ ticket.categoria }}</li>
-{% endfor %}
-</ul>
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <title>Document</title>
+</head>
+<body>
+  <header class="bg-white border border-gray-300 ">
+    <div class="flex items-center h-20 px-6 gap-4">
+     <img src="{% static 'img/logo.png' %}" alt="Logo" class="h-20 w-auto">
+      <span class="text-sm font-normal text-gray-800 self-end mb-1 -ml-6  ">
+        Usuario
+      </span>
+     
+    </div>
+
+  </header>
+
+   <!-- RECTÁNGULO VERTICAL: Menú -->
+    <nav class="bg-gray-50 border border-gray-300 w-64 h-screen">
+      <ul class="p-4 space-y-2">
+        <li>
+          <a href="{% url 'crear_ticket' %}" class="flex items-center gap-2 text-gray-700">Crear nuevo ticket
+            <img src="{% static 'img/crear.png' %}" alt="Logo" class="h-10 w-auto">
+          </a>
+        
+        </li>
+        <li>
+          <a href="{% url 'lista_tickets' %}" class="text-gray-700">Mis tickets
+            <img src="{% static 'img/historiar.png' %}" alt="Logo" class="h-10 w-auto">
+          </a>
+         
+        </li>
+      </ul>
+    </nav>
+</body>
+</html>
