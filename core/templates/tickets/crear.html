@@ -1,11 +1,12 @@
 <h1>Crear Ticket</h1>
  
-<form method="post">
-
+<form method="post" enctype="multipart/form-data">
     {% csrf_token %}
-
     {{ form.as_p }}
-<button type="submit">Crear</button>
-<a href="{% url 'lista_tickets' %}">Cancelar</a>
+    {{ formset.management_form }}
+    {% for adjunto_form in formset %}
+        {{ adjunto_form.as_p }}
+    {% endfor %}
+    <button type="submit">Crear</button>
+    <a href="{% url 'lista_tickets' %}">Cancelar</a>
 </form>
- 

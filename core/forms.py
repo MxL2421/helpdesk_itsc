@@ -5,12 +5,17 @@ from django import forms
 from django.forms import inlineformset_factory
 
 
-# Formulario para la creación de tickets
+# Formularios para la creación de tickets, etiquetado de maestros y adjuntado de archivos
 class TicketForm(forms.ModelForm):
     class Meta:
         model = Ticket
         fields = ['titulo', 'asunto', 'categoria']
 
+class EtiquetarMaestroForm(forms.Form):
+    maestro = forms.ModelChoiceField(
+        queryset=Usuario.objects.filter(rol='maestro', activo=True),
+        label='Maestro a etiquetar'
+    )
 
 AdjuntoFormSet = inlineformset_factory(
     Ticket,
@@ -20,6 +25,7 @@ AdjuntoFormSet = inlineformset_factory(
     max_num=5,
     can_delete=False
 )
+
 
 
 class ActualizarTicketForm(forms.ModelForm):

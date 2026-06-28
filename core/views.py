@@ -2,14 +2,16 @@
 from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
 from django.utils import timezone
-from .forms import TicketForm, ActualizarTicketForm, LoginForm, ReasignarTicketForm, AdjuntoFormSet
+from .forms import TicketForm, ActualizarTicketForm, LoginForm, ReasignarTicketForm, AdjuntoFormSet,  EtiquetarMaestroForm
 from django.contrib.auth import login, logout
 from django.shortcuts import get_object_or_404
 from django.http import HttpResponseForbidden
 from django.contrib import messages
-from .models import Ticket, HistorialTicket
+from .models import Ticket, HistorialTicket, TicketEtiquetado
 
 
+def inicio(request):
+    return render(request, 'inicio.html')
 
 @login_required
 def crear_ticket(request):
@@ -36,6 +38,35 @@ def crear_ticket(request):
         formset = AdjuntoFormSet()
 
     return render(request, 'tickets/crear.html', {'form': form, 'formset': formset})
+
+@login_required
+def etiquetar_maestro(request, ticket_id):
+    ticket = get_object_or_404(Ticket, id=ticket_id)
+    user = request.user
+
+    es_creador = ticket.creador == user
+    es_tecnico_o_admin = user.rol in ['tecnico', 'administrador']
+
+    if not (es_creador or es_tecnico_o_admin):
+        return HttpResponseForbidden('No tienes permiso para etiquetar maestros en este ticket.')
+
+    if request.method == 'POST':
+        form = EtiquetarMaestroForm(request.POST)
+        if form.is_valid():
+            maestro = form.cleaned_data['maestro']
+
+            ya_etiquetado = TicketEtiquetado.objects.filter(ticket=ticket, usuario=maestro).exists()
+            if ya_etiquetado:
+                messages.error(request, 'Este maestro ya está etiquetado en el ticket.')
+            else:
+                TicketEtiquetado.objects.create(ticket=ticket, usuario=maestro)
+                messages.success(request, f'{maestro.get_full_name()} fue etiquetado correctamente.')
+
+            return redirect('detalle_ticket', ticket_id=ticket.id)
+    else:
+        form = EtiquetarMaestroForm()
+
+    return render(request, 'tickets/etiquetar.html', {'form': form, 'ticket': ticket})
 
 @login_required
 def lista_tickets(request):
@@ -108,6 +139,10 @@ def actualizar_ticket(request, ticket_id):
 
     if ticket.tecnico != request.user:
         return HttpResponseForbidden('Solo el técnico asignado puede actualizar este ticket.')
+
+    if ticket.estado == 'cerrado':
+        messages.error(request, 'No se puede modificar un ticket cerrado. Pide al administrador que lo reabra.')
+        return redirect('detalle_ticket', ticket_id=ticket.id)
 
     if request.method == 'POST':
         estado_anterior = ticket.estado

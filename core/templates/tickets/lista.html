@@ -13,9 +13,12 @@
     <div class="flex items-center h-20 px-6 gap-4">
      <img src="{% static 'img/logo.png' %}" alt="Logo" class="h-20 w-auto">
       <span class="text-sm font-normal text-gray-800 self-end mb-1 -ml-6  ">
-        Usuario
+        {{ user.get_full_name }}
       </span>
-     
+      <form method="post" action="{% url 'logout' %}" class="ml-auto">
+        {% csrf_token %}
+        <button type="submit">Cerrar sesión</button>
+      </form>
     </div>
 
   </header>
@@ -37,5 +40,23 @@
         </li>
       </ul>
     </nav>
+
+    <!-- LISTA DE TICKETS -->
+    <main class="p-6">
+      <h1 class="text-xl font-semibold mb-4">Mis Tickets</h1>
+      <ul class="space-y-2">
+        {% for ticket in tickets %}
+          <li class="border border-gray-300 rounded p-3">
+            <a href="{% url 'detalle_ticket' ticket.id %}" class="text-blue-700 font-medium">
+              {{ ticket.titulo }}
+            </a>
+            <span class="text-sm text-gray-500 ml-2">{{ ticket.get_estado_display }}</span>
+            <span class="text-sm text-gray-500 ml-2">{{ ticket.categoria }}</span>
+          </li>
+        {% empty %}
+          <li class="text-gray-500">No hay tickets para mostrar.</li>
+        {% endfor %}
+      </ul>
+    </main>
 </body>
 </html>
