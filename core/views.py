@@ -2,12 +2,12 @@
 from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
 from django.utils import timezone
-from .forms import TicketForm, ActualizarTicketForm, LoginForm, ReasignarTicketForm, AdjuntoFormSet, EtiquetarMaestroForm, RedirigirTicketForm
+from .forms import TicketForm, ActualizarTicketForm, LoginForm, ReasignarTicketForm, AdjuntoFormSet, EtiquetarMaestroForm, RedirigirTicketForm, ComentarioForm
 from django.contrib.auth import login, logout
 from django.shortcuts import get_object_or_404
 from django.http import HttpResponseForbidden
 from django.contrib import messages
-from .models import Ticket, HistorialTicket, TicketEtiquetado
+from .models import Ticket, HistorialTicket, TicketEtiquetado, Comentario
 
 
 def inicio(request):
@@ -90,7 +90,35 @@ def detalle_ticket(request, ticket_id):
     if not (es_creador or es_tecnico_o_admin or esta_etiquetado):
         return HttpResponseForbidden('No tienes permiso para ver este ticket.')
 
-    return render(request, 'tickets/detalle.html', {'ticket': ticket})
+    es_tecnico_asignado_o_admin = (ticket.tecnico == user) or (user.rol == 'administrador')
+
+    if request.method == 'POST':
+        form = ComentarioForm(request.POST)
+        if form.is_valid():
+            comentario = form.save(commit=False)
+            comentario.ticket = ticket
+            comentario.autor = user
+
+            if comentario.es_privado and not es_tecnico_asignado_o_admin:
+                messages.error(request, 'No tienes permiso para escribir comentarios privados.')
+                return redirect('detalle_ticket', ticket_id=ticket.id)
+
+            comentario.save()
+            messages.success(request, 'Comentario agregado correctamente.')
+            return redirect('detalle_ticket', ticket_id=ticket.id)
+    else:
+        form = ComentarioForm()
+
+    if es_tecnico_asignado_o_admin:
+        comentarios = ticket.comentarios.all()
+    else:
+        comentarios = ticket.comentarios.filter(es_privado=False)
+
+    return render(request, 'tickets/detalle.html', {
+        'ticket': ticket,
+        'form': form,
+        'comentarios': comentarios,
+    })
 
 
 def login_view(request):

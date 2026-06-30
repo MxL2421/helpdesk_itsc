@@ -61,4 +61,29 @@
     {% endif %}
 {% endif %}
 
+# Sección de comentarios
+
+<h3>Comentarios</h3>
+{% for comentario in comentarios %}
+    <div>
+        <p><strong>{{ comentario.autor }}</strong> — {{ comentario.fecha }}</p>
+        {% if comentario.es_privado %}
+            <span>[PRIVADO]</span>
+        {% endif %}
+        <p>{{ comentario.contenido }}</p>
+    </div>
+{% empty %}
+    <p>No hay comentarios aún.</p>
+{% endfor %}
+
+<h3>Agregar comentario</h3>
+<form method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+    {% if user.rol not in 'tecnico administrador' or ticket.tecnico != user %}
+        <input type="hidden" name="es_privado" value="False">
+    {% endif %}
+    <button type="submit">Comentar</button>
+</form>
+
 <a href="{% url 'lista_tickets' %}">Volver a la lista</a>
