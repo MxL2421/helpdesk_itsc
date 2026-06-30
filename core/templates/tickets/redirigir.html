@@ -1,0 +1,10 @@
+<h1>Redirigir Ticket: {{ ticket.titulo }}</h1>
+
+<p><strong>Categoría actual:</strong> {{ ticket.categoria }}</p>
+
+<form method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit">Redirigir</button>
+    <a href="{% url 'detalle_ticket' ticket.id %}">Cancelar</a>
+</form>

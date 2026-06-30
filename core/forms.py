@@ -27,12 +27,14 @@ AdjuntoFormSet = inlineformset_factory(
 )
 
 
+#Actualización de tickets
 
 class ActualizarTicketForm(forms.ModelForm):
     class Meta:
         model = Ticket
         fields = ['estado', 'prioridad']
 
+#Reasignación de ticket
 class ReasignarTicketForm(forms.ModelForm):
     class Meta:
         model = Ticket
@@ -41,6 +43,12 @@ class ReasignarTicketForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['tecnico'].queryset = Usuario.objects.filter(rol='tecnico', activo=True)
+
+#Redirección de ticket (cambio de categoría)
+class RedirigirTicketForm(forms.ModelForm):
+    class Meta:
+        model = Ticket
+        fields = ['categoria']
 
 class LoginForm(AuthenticationForm):
     username = forms.EmailField(label='Correo institucional')

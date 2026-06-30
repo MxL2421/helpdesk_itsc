@@ -53,4 +53,12 @@
     <p><a href="{% url 'etiquetar_maestro' ticket.id %}">Etiquetar maestro</a></p>
 {% endif %}
 
+# Redireción a otra categoría por parte del admin o el técnico asignado
+
+{% if user.rol == 'administrador' or ticket.tecnico == user %}
+    {% if ticket.estado != 'cerrado' %}
+        <p><a href="{% url 'redirigir_ticket' ticket.id %}">Redirigir a otra categoría</a></p>
+    {% endif %}
+{% endif %}
+
 <a href="{% url 'lista_tickets' %}">Volver a la lista</a>

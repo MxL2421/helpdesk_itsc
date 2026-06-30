@@ -2,7 +2,7 @@
 from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
 from django.utils import timezone
-from .forms import TicketForm, ActualizarTicketForm, LoginForm, ReasignarTicketForm, AdjuntoFormSet,  EtiquetarMaestroForm
+from .forms import TicketForm, ActualizarTicketForm, LoginForm, ReasignarTicketForm, AdjuntoFormSet, EtiquetarMaestroForm, RedirigirTicketForm
 from django.contrib.auth import login, logout
 from django.shortcuts import get_object_or_404
 from django.http import HttpResponseForbidden
@@ -251,6 +251,43 @@ def reasignar_ticket(request, ticket_id):
         form = ReasignarTicketForm(instance=ticket)
 
     return render(request, 'tickets/reasignar.html', {'form': form, 'ticket': ticket})
+
+@login_required
+def redirigir_ticket(request, ticket_id):
+    ticket = get_object_or_404(Ticket, id=ticket_id)
+    user = request.user
+
+    es_tecnico_asignado = user.rol == 'tecnico' and ticket.tecnico == user
+    es_admin = user.rol == 'administrador'
+
+    if not (es_tecnico_asignado or es_admin):
+        return HttpResponseForbidden('No tienes permiso para redirigir este ticket.')
+
+    if ticket.estado == 'cerrado':
+        messages.error(request, 'No se puede redirigir un ticket cerrado.')
+        return redirect('detalle_ticket', ticket_id=ticket.id)
+
+    if request.method == 'POST':
+        categoria_anterior = ticket.categoria
+        form = RedirigirTicketForm(request.POST, instance=ticket)
+        if form.is_valid():
+            ticket_actualizado = form.save()
+
+            if categoria_anterior != ticket_actualizado.categoria:
+                HistorialTicket.objects.create(
+                    campo='categoria',
+                    valor_anterior=str(categoria_anterior),
+                    valor_nuevo=str(ticket_actualizado.categoria),
+                    ticket=ticket_actualizado,
+                    usuario=request.user
+                )
+
+            messages.success(request, 'Ticket redirigido correctamente.')
+            return redirect('detalle_ticket', ticket_id=ticket.id)
+    else:
+        form = RedirigirTicketForm(instance=ticket)
+
+    return render(request, 'tickets/redirigir.html', {'form': form, 'ticket': ticket})
 
 
 # Controla el Logout
