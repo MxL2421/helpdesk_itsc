@@ -8,29 +8,36 @@
     <title>login</title>
 </head>
 <body>
-    <div class="relative min-h-screen flex flex-col items-center justify-center p-6 bg-[url('/static/img/itsc.png)] bg-cover bg-center bg-fixed">
-          <img src="{% static 'img/logo.png' %}" alt="Logo HELP" class=" w-32 mb-8  bg-center ">
-          <h1 class="text-3xl font-semibold mb-6">Iniciar sesión</h1>
-           <div class="bg-white/55 backdrop-blur-sm rounded-xl shadow-lg p-8 w-full max-w-sm">
-               <form method="post">
-                 {% csrf_token %}
-                 <label class="block text-sm font-medium mb-1">Usuario</label>
-                 <div class="flex items-center bg-white rounded-lg px-3 py-2 mb-4">
-                     <span class="mr-2">👤</span>
-                       {{ form.username }}
-                         <label class="block text-sm font-medium mb-1">Clave</label>
-                      <div class="flex items-center bg-white rounded-lg px-3 py-2 mb-2">
-                        <span class="mr-2">🔒</span>
-                          {{ form.password }}
-                      </div>   
-                       <button type="submit"
-              class="w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-2 rounded-lg transition">
-        Acceder
-      </button>
-                 </div>
-               </form>
-           </div>
-  
+    <div class="relative min-h-screen flex flex-col items-center justify-center p-6 bg-[url('/static/img/itsc.png')] bg-cover bg-center bg-fixed">
+        <img src="{% static 'img/logo.png' %}" alt="Logo HELP" class="w-64 mb-4 bg-center">
+      
+
+        <div class="bg-white/55 backdrop-blur-sm rounded-xl shadow-lg p-8 w-full max-w-sm">
+            <form method="post">
+                {% csrf_token %}
+                 <h1 class="text-3xl font-semibold mb-6 text-center">Iniciar sesión</h1>
+                <label class="block text-sm font-medium mb-1">Usuario</label>
+                <div class="flex items-center bg-white rounded-lg px-3 py-2 mb-4">
+                    <span class="mr-2">
+                      <img src="{% static 'img/usuario.png' %}" alt="Clave" class="w-5 h-5">
+                    </span>
+                    {{ form.username }}
+                </div>
+
+                <label class="block text-sm font-medium mb-1">Clave</label>
+                <div class="flex items-center bg-white rounded-lg px-3 py-2 mb-2">
+                    <span class="mr-2">
+                      <img src="{% static 'img/candado.png' %}" alt="Clave" class="w-5 h-5">
+                    </span>
+                    {{ form.password }}
+                </div>
+
+                <button type="submit"
+                        class="w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-2 rounded-lg transition">
+                    Acceder
+                </button>
+            </form>
+        </div>
     </div>
 </body>
 </html>
