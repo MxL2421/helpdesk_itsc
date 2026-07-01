@@ -1,12 +1,61 @@
-<h1>Crear Ticket</h1>
- 
-<form method="post" enctype="multipart/form-data">
+{% extends 'base.html' %}
+{% block title %}Crear Ticket{% endblock %}
+
+{% block content %}
+<div class="bg-gray-300 rounded-lg p-6 max-w-3xl mx-auto">
+
+  <form method="post" enctype="multipart/form-data" class="space-y-4">
     {% csrf_token %}
-    {{ form.as_p }}
     {{ formset.management_form }}
-    {% for adjunto_form in formset %}
+
+    <!-- FILA 1: Categoria y Prioridad -->
+    <div class="flex gap-6">
+      <div class="flex-1">
+        <label class="block text-sm font-medium text-gray-700 mb-1">Categoría</label>
+        {{ form.categoria }}
+      </div>
+      <div class="flex-1">
+        <label class="block text-sm font-medium text-gray-700 mb-1">Prioridad</label>
+        {{ form.prioridad }}
+      </div>
+    </div>
+
+    <!-- FILA 2: Asunto y Fecha -->
+    <div class="flex gap-6">
+      <div class="flex-1">
+        {{ form.asunto }}
+      </div>
+      <div class="w-40">
+        {{ form.fecha }}
+      </div>
+    </div>
+
+    <!-- FILA 3: CC -->
+    <div>
+      {{ form.cc }}
+    </div>
+
+    <!-- FILA 4: Descripción (textarea grande) -->
+    <div>
+      {{ form.descripcion }}
+    </div>
+
+    <!-- FILA 5: Adjuntos -->
+     <div>
+      {% for adjunto_form in formset %}
         {{ adjunto_form.as_p }}
-    {% endfor %}
-    <button type="submit">Crear</button>
-    <a href="{% url 'lista_tickets' %}">Cancelar</a>
-</form>
+      {% endfor %}
+    </div>
+    
+    <!-- BOTÓN ENVIAR -->
+    <div class="flex justify-center pt-2">
+      <button type="submit" class="flex flex-col items-center bg-gray-200 hover:bg-gray-400 rounded-lg px-10 py-2 transition">
+        <i class="fa-solid fa-paper-plane text-xl"></i>
+        
+        <span class="text-sm mt-1">Enviar</span>
+      </button>
+    </div>
+
+  </form>
+</div>
+{% endblock %}
