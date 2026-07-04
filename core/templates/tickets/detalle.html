@@ -1,11 +1,31 @@
 <h1>{{ ticket.titulo }}</h1>
- 
-<p><strong>Estado:</strong> {{ ticket.estado }}</p>
+
+{% if messages %}
+    {% for message in messages %}
+        <p>{{ message }}</p>
+    {% endfor %}
+{% endif %}
+
+<p><strong>Estado:</strong> {{ ticket.get_estado_display }}</p>
 <p><strong>Prioridad:</strong> {{ ticket.prioridad|default:"Sin asignar" }}</p>
 <p><strong>Categoría:</strong> {{ ticket.categoria }}</p>
 <p><strong>Creador:</strong> {{ ticket.creador }}</p>
 <p><strong>Técnico asignado:</strong> {{ ticket.tecnico|default:"Sin asignar" }}</p>
 <p><strong>Asunto:</strong> {{ ticket.asunto }}</p>
+
+<h3>Archivos adjuntos</h3>
+{% for adjunto in ticket.adjuntos.all %}
+    <p><a href="{{ adjunto.ruta.url }}">{{ adjunto.nombre_archivo }}</a></p>
+{% empty %}
+    <p>Sin archivos adjuntos.</p>
+{% endfor %}
+
+<h3>Maestros etiquetados</h3>
+{% for etiquetado in ticket.ticketetiquetado_set.all %}
+    <p>{{ etiquetado.usuario }}</p>
+{% empty %}
+    <p>Sin maestros etiquetados.</p>
+{% endfor %}
 
 {% if user.rol == 'tecnico' and not ticket.tecnico %}
 <form method="post" action="{% url 'autoasignar_ticket' ticket.id %}">
@@ -13,5 +33,58 @@
 <button type="submit">Autoasignarme este ticket</button>
 </form>
 {% endif %}
+
+{% if ticket.tecnico == user and ticket.estado != 'cerrado' %}
+    <p><a href="{% url 'actualizar_ticket' ticket.id %}">Actualizar estado y prioridad</a></p>
+{% endif %}
+
+{% if user.rol == 'administrador' %}
+    <p><a href="{% url 'reasignar_ticket' ticket.id %}">Reasignar técnico</a></p>
+{% endif %}
+
+{% if user.rol == 'administrador' and ticket.estado == 'cerrado' %}
+<form method="post" action="{% url 'reabrir_ticket' ticket.id %}">
+        {% csrf_token %}
+<button type="submit">Reabrir ticket</button>
+</form>
+{% endif %}
+
+{% if ticket.creador == user or user.rol == 'tecnico' or user.rol == 'administrador' %}
+    <p><a href="{% url 'etiquetar_maestro' ticket.id %}">Etiquetar maestro</a></p>
+{% endif %}
+
+# Redireción a otra categoría por parte del admin o el técnico asignado
+
+{% if user.rol == 'administrador' or ticket.tecnico == user %}
+    {% if ticket.estado != 'cerrado' %}
+        <p><a href="{% url 'redirigir_ticket' ticket.id %}">Redirigir a otra categoría</a></p>
+    {% endif %}
+{% endif %}
+
+# Sección de comentarios
+
+<h3>Comentarios</h3>
+{% for comentario in comentarios %}
+    <div>
+        <p><strong>{{ comentario.autor }}</strong> — {{ comentario.fecha }}</p>
+        {% if comentario.es_privado %}
+            <span>[PRIVADO]</span>
+        {% endif %}
+        <p>{{ comentario.contenido }}</p>
+    </div>
+{% empty %}
+    <p>No hay comentarios aún.</p>
+{% endfor %}
+
+<h3>Agregar comentario</h3>
+<form method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+    {% if user.rol not in 'tecnico administrador' or ticket.tecnico != user %}
+        <input type="hidden" name="es_privado" value="False">
+    {% endif %}
+    <button type="submit">Comentar</button>
+</form>
+
 <a href="{% url 'lista_tickets' %}">Volver a la lista</a>
 

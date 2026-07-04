@@ -1,0 +1,8 @@
+<h1>Actualizar Ticket: {{ ticket.titulo }}</h1>
+
+<form method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit">Guardar</button>
+    <a href="{% url 'detalle_ticket' ticket.id %}">Cancelar</a>
+</form>

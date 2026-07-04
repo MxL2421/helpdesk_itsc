@@ -1,114 +1,132 @@
 
 {% extends 'base.html' %}
+{% load static %}
 {% block title %}Crear Ticket{% endblock %}
 
 {% block content %}
-<div class="bg-gray-300 w-[650px] rounded-md p-6"><!--contenedor gris -->
+<div class="bg-gray-300 rounded-lg p-6 max-w-3xl mx-auto">
 
-  
-    <!-- Inicio del formulario -->
-    <form method="post" enctype="multipart/form-data">
+  <form method="post" enctype="multipart/form-data" class="space-y-4">
+    {% csrf_token %}
 
-        {% csrf_token %}
-        <!-- Campo Categoría -->
-      <div class="flex gap-6">
-       <div class="flex-1">
-         <label class="block text-sm font-medium text-gray-700 mb-1">Categoría</label>
-          {{ form.categoria }}
+
+    <!-- FILA 1: Categoria y Prioridad -->
+    <div class="flex gap-6">
+      <div class="flex-1">
+        <label class="block text-sm font-medium text-black-700 mb-1">Categoría</label>
+        {{ form.categoria }}
       </div>
-        <!-- Campo Título -->
-<div class="mb-4">
-    <label class="block text-sm font-medium mb-1">
-        Título
-    </label>
-
-    {{ form.titulo }}
-</div>
-
-<!-- Campo Asunto -->
-<div class="mb-4">
-    <label class="block text-sm font-medium mb-2">
-        
-    </label>
-
-    {{ form.asunto }}
-</div>
-<!-- 
-     SECCIÓN: ADJUNTAR IMAGEN
--->
-<div class="mt-6">
-
-    <!-- Título de la sección -->
-    <label class="block text-sm font-semibold text-gray-700 mb-2">
-        
-    </label>
-
-    <!-- Contenedor del área para subir archivos -->
-    <div class="border-2 border-dashed border-gray-400 rounded-lg p-1 text-center bg-gray-50">
-
-        <!-- Icono -->
-        <div class="text-4xl mb-2">
-         
-        </div>
-
-        <!-- Texto principal -->
-        <p class="text-gray-700 font-medium">
-            Selecciona una imagen
-        </p>
-
-        <!-- Texto secundario -->
-        <p class="text-sm text-gray-500 mt-1">
-            JPG, PNG o PDF
-        </p>
-
-        <!-- Botón (temporal) -->
-        <button
-            type="button"
-            class="mt-4 px-5 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition">
-
-            Buscar archivo
-
-        </button>
+      <div class="flex-1">
+        <label class="block text-sm font-medium text-black-700 mb-1">Prioridad</label>
+        {{ form.prioridad }}
+      </div>
 
     </div>
+      <div class="w-full mt-6">
+        <label class="block text-sm font-medium text-black-700 mb-2">
+            titulo
+        </label>
+            {{ form.titulo}}
+        
+    </div>
 
-</div>
+    <!-- FILA 2: Asunto y Fecha -->
+    <div class="flex gap-6 items-end">
+     <!-- Asunto -->
 
-       <!-- Sección para adjuntar archivos -->
-<div class="mt-6">
+    <div class="w-full max-w-2xl">
+        <label class="block text-sm font-medium text-black-700 mb-2">
+            Asunto
+        </label>
 
-    <!-- Título de la sección -->
-    <h3 class="text-sm font-semibold mb-2">
-       <!--Adjuntar archivo--> 
-    </h3>
+        {{ form.asunto }}
+    </div>
 
+    <!-- Fecha -->
+    <div class="w-48">
+        <label class="block text-sm font-medium text-black-700 mb-2">
+           
+        </label>
+
+        {{ form.fecha }}
+    </div>
     
-    {{ formset.management_form }}
-
-    {% for adjunto_form in formset %}
-        {{ adjunto_form.as_p }}
-    {% endfor %}
-
+    </div>
+     <!-- FILA 3: CC -->
+ <div>
+    <label class="block text-sm font-medium text-gray-700 mb-2">
+        {{ form.maestros.label }}
+    </label>
+    <div class="space-y-2">
+        {% for checkbox in form.maestros %}
+            <div class="flex items-center gap-2">
+                {{ checkbox.tag }}
+                <label for="{{ checkbox.id_for_label }}">
+                    {{ checkbox.choice_label }}
+                </label>
+            </div>
+        {% endfor %}
+    </div>
 </div>
-<div class="flex justify-end gap-4 mt-6">
+  
 
-    <!-- Botón Cancelar -->
-    <a href="{% url 'lista_tickets' %}"
-       class="px-6 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition">
-        Cancelar
-    </a>
+    <!-- FILA 4: Descripción (textarea grande) -->
+    <div>
+      {{ form.descripcion }}
+    </div>
 
-    <!-- Botón Crear -->
-    <button
-        type="submit"
-        class="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition">
-
-        Crear Ticket
-
-    </button>
-
-</div>
+    <!-- FILA 5: Adjuntos -->
 
 
-</div>
+
+{{ formset.management_form }}
+
+
+<button type="button" id="agregar-adjunto" class="text-blue-600 text-sm mt-2">
+    + Agregar archivo
+</button>
+<div id="archivos-seleccionados" class="text-sm text-gray-600 mt-1"></div>
+<p class="text-xs text-gray-500">Máximo 5 archivos. Solo imágenes, PDF y Word.</p>
+
+<script>
+    const container = document.getElementById('adjuntos-container');
+    const items = container.querySelectorAll('.adjunto-item input[type="file"]');
+    const boton = document.getElementById('agregar-adjunto');
+    const listaArchivos = document.getElementById('archivos-seleccionados');
+    let visibles = 0;
+
+    boton.addEventListener('click', function () {
+        if (visibles < items.length) {
+            items[visibles].click();
+        }
+    });
+
+    items.forEach((input, index) => {
+        input.addEventListener('change', function () {
+            if (this.files.length > 0) {
+                visibles++;
+                const nombre = this.files[0].name;
+                const p = document.createElement('p');
+                p.textContent = ✓ ${nombre};
+                listaArchivos.appendChild(p);
+
+                if (visibles >= items.length) {
+                    boton.style.display = 'none';
+                }
+            }
+        });
+    });
+</script>
+    <!-- BOTÓN ENVIAR -->
+    <div class="flex justify-center pt-2">
+      <button type="submit" class="flex flex-col items-center bg-red-600 hover:bg-red-700 rounded-lg px-10 py-2 transition">
+        <i class="fa-solid fa-paper-plane text-xl"></i>
+        
+        <span class="text-sm mt-1">Enviar</span>
+      </button>
+    </div>
+
+  </form>
+ </div>
+
 {% endblock %}
