@@ -197,10 +197,10 @@ def login_view(request):
 # Un ticket solo puede tomarlo un técnico si este no ha sido asignado
 @login_required
 def autoasignar_ticket(request, ticket_id):
+    ticket = get_object_or_404(Ticket, id=ticket_id)
+
     if request.method != 'POST':
         return HttpResponseForbidden('Método no permitido.')
-
-    ticket = get_object_or_404(Ticket, id=ticket_id)
 
     if request.user.rol != 'tecnico':
         return HttpResponseForbidden('Solo los técnicos pueden autoasignarse tickets.')
@@ -211,6 +211,13 @@ def autoasignar_ticket(request, ticket_id):
 
     ticket.tecnico = request.user
     ticket.save()
+
+    enviar_notificacion(
+        ticket=ticket,
+        destinatario_correo=ticket.tecnico.correo,
+        asunto=f'Te has autoasignado el ticket #{ticket.id}',
+        mensaje=f'Hola {ticket.tecnico.nombre},\n\nTe has autoasignado el ticket "{ticket.titulo}".\n\nCategoría: {ticket.categoria}\nPrioridad: {ticket.prioridad or "Sin asignar"}'
+    )
 
     messages.success(request, 'Te has autoasignado el ticket correctamente.')
     return redirect('detalle_ticket', ticket_id=ticket.id)
@@ -337,13 +344,20 @@ def reasignar_ticket(request, ticket_id):
                     usuario=request.user
                 )
 
+                if ticket_actualizado.tecnico:
+                    enviar_notificacion(
+                        ticket=ticket_actualizado,
+                        destinatario_correo=ticket_actualizado.tecnico.correo,
+                        asunto=f'Se te asignó el ticket #{ticket_actualizado.id}',
+                        mensaje=f'Hola {ticket_actualizado.tecnico.nombre},\n\nEl administrador te ha asignado el ticket "{ticket_actualizado.titulo}".\n\nCategoría: {ticket_actualizado.categoria}\nPrioridad: {ticket_actualizado.prioridad or "Sin asignar"}'
+                    )
+
             messages.success(request, 'Técnico reasignado correctamente.')
             return redirect('detalle_ticket', ticket_id=ticket.id)
     else:
         form = ReasignarTicketForm(instance=ticket)
 
     return render(request, 'tickets/reasignar.html', {'form': form, 'ticket': ticket})
-
 @login_required
 def redirigir_ticket(request, ticket_id):
     ticket = get_object_or_404(Ticket, id=ticket_id)
