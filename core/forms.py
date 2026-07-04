@@ -9,14 +9,24 @@ from django.core.exceptions import ValidationError
 # Formularios para la creación de tickets, etiquetado de maestros y adjuntado de archivos
 
 class TicketForm(forms.ModelForm):
+    maestros = forms.ModelMultipleChoiceField(
+        queryset=Usuario.objects.filter(rol='maestro', activo=True),
+        required=False,
+        label='Etiquetar maestros (opcional)',
+        widget=forms.CheckboxSelectMultiple
+    )
+
     class Meta:
         model = Ticket
         fields = ['titulo', 'asunto', 'categoria']
 
+
 class EtiquetarMaestroForm(forms.Form):
-    maestro = forms.ModelChoiceField(
+    maestros = forms.ModelMultipleChoiceField(
         queryset=Usuario.objects.filter(rol='maestro', activo=True),
-        label='Maestro a etiquetar'
+        required=False,
+        label='Etiquetar maestros',
+        widget=forms.CheckboxSelectMultiple
     )
 
 class AdjuntoForm(forms.ModelForm):

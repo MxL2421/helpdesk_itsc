@@ -34,6 +34,17 @@ def crear_ticket(request):
                         adjunto.tipo_mime = adjunto.ruta.file.content_type if hasattr(adjunto.ruta.file, 'content_type') else 'desconocido'
                         adjunto.save()
 
+            maestros = form.cleaned_data.get('maestros')
+            if maestros:
+                for maestro in maestros:
+                    TicketEtiquetado.objects.create(ticket=ticket, usuario=maestro)
+                    enviar_notificacion(
+                        ticket=ticket,
+                        destinatario_correo=maestro.correo,
+                        asunto=f'Has sido etiquetado en el ticket #{ticket.id}',
+                        mensaje=f'Hola {maestro.nombre},\n\nFuiste etiquetado como observador en el ticket "{ticket.titulo}".\n\nPuedes consultar los detalles desde el sistema.'
+                    )
+
             enviar_notificacion(
                 ticket=ticket,
                 destinatario_correo=ticket.creador.correo,
@@ -62,22 +73,28 @@ def etiquetar_maestro(request, ticket_id):
     if request.method == 'POST':
         form = EtiquetarMaestroForm(request.POST)
         if form.is_valid():
-            maestro = form.cleaned_data['maestro']
+            maestros = form.cleaned_data['maestros']
+            etiquetados = []
+            ya_etiquetados = []
 
-            ya_etiquetado = TicketEtiquetado.objects.filter(ticket=ticket, usuario=maestro).exists()
-            if ya_etiquetado:
-                messages.error(request, 'Este maestro ya está etiquetado en el ticket.')
-            else:
-                TicketEtiquetado.objects.create(ticket=ticket, usuario=maestro)
+            for maestro in maestros:
+                ya_etiquetado = TicketEtiquetado.objects.filter(ticket=ticket, usuario=maestro).exists()
+                if ya_etiquetado:
+                    ya_etiquetados.append(maestro.get_full_name())
+                else:
+                    TicketEtiquetado.objects.create(ticket=ticket, usuario=maestro)
+                    enviar_notificacion(
+                        ticket=ticket,
+                        destinatario_correo=maestro.correo,
+                        asunto=f'Has sido etiquetado en el ticket #{ticket.id}',
+                        mensaje=f'Hola {maestro.nombre},\n\nFuiste etiquetado como observador en el ticket "{ticket.titulo}".\n\nPuedes consultar los detalles desde el sistema.'
+                    )
+                    etiquetados.append(maestro.get_full_name())
 
-                enviar_notificacion(
-                    ticket=ticket,
-                    destinatario_correo=maestro.correo,
-                    asunto=f'Has sido etiquetado en el ticket #{ticket.id}',
-                    mensaje=f'Hola {maestro.nombre},\n\nFuiste etiquetado como observador en el ticket "{ticket.titulo}".\n\nPuedes consultar los detalles del ticket desde el sistema.'
-                )
-
-                messages.success(request, f'{maestro.get_full_name()} fue etiquetado correctamente.')
+            if etiquetados:
+                messages.success(request, f'Maestros etiquetados: {", ".join(etiquetados)}.')
+            if ya_etiquetados:
+                messages.error(request, f'Ya estaban etiquetados: {", ".join(ya_etiquetados)}.')
 
             return redirect('detalle_ticket', ticket_id=ticket.id)
     else:
