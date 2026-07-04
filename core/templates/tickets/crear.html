@@ -100,22 +100,25 @@
             items[visibles].click();
         }
     });
+    items.forEach((input) => {
+      input.addEventListener('change', function () {
+         if (this.files.length > 0) {
+            visibles++;
 
-    items.forEach((input, index) => {
-        input.addEventListener('change', function () {
-            if (this.files.length > 0) {
-                visibles++;
-                const nombre = this.files[0].name;
-                const p = document.createElement('p');
-                p.textContent = ✓ ${nombre};
-                listaArchivos.appendChild(p);
+            const nombre = this.files[0].name;
+            const p = document.createElement('p');
 
-                if (visibles >= items.length) {
-                    boton.style.display = 'none';
-                }
-            }
-        });
+            p.textContent = `✓ ${nombre}`;
+            // o: p.textContent = "✓ " + nombre;
+
+            listaArchivos.appendChild(p);
+
+             if (visibles >= items.length) {
+                boton.style.display = 'none';
+             }
+        }
     });
+});
 </script>
     <!-- BOTÓN ENVIAR -->
     <div class="flex justify-center pt-2">
