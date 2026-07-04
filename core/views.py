@@ -7,7 +7,8 @@ from django.contrib.auth import login, logout
 from django.shortcuts import get_object_or_404
 from django.http import HttpResponseForbidden
 from django.contrib import messages
-from .models import Ticket, HistorialTicket, TicketEtiquetado, Comentario
+from .models import Ticket, HistorialTicket, TicketEtiquetado, Comentario, Notificacion
+from django.core.mail import send_mail
 
 
 def inicio(request):
@@ -31,6 +32,13 @@ def crear_ticket(request):
                         adjunto.nombre_archivo = adjunto.ruta.name
                         adjunto.tipo_mime = adjunto.ruta.file.content_type if hasattr(adjunto.ruta.file, 'content_type') else 'desconocido'
                         adjunto.save()
+
+            enviar_notificacion(
+                ticket=ticket,
+                destinatario_correo=ticket.creador.correo,
+                asunto=f'Ticket #{ticket.id} creado: {ticket.titulo}',
+                mensaje=f'Hola {ticket.creador.nombre},\n\nTu ticket "{ticket.titulo}" fue creado correctamente.\n\nCategoría: {ticket.categoria}\n\nPuedes hacerle seguimiento desde el sistema.'
+            )
 
             return redirect('lista_tickets')
     else:
@@ -67,6 +75,28 @@ def etiquetar_maestro(request, ticket_id):
         form = EtiquetarMaestroForm()
 
     return render(request, 'tickets/etiquetar.html', {'form': form, 'ticket': ticket})
+
+def enviar_notificacion(ticket, destinatario_correo, asunto, mensaje):
+    notificacion = Notificacion.objects.create(
+        asunto=asunto,
+        mensaje=mensaje,
+        correo_destino=destinatario_correo,
+        ticket=ticket
+    )
+
+    try:
+        send_mail(
+            subject=asunto,
+            message=mensaje,
+            from_email=None,
+            recipient_list=[destinatario_correo],
+            fail_silently=False,
+        )
+        notificacion.enviada = True
+        notificacion.fecha_envio = timezone.now()
+        notificacion.save()
+    except Exception:
+        pass
 
 @login_required
 def lista_tickets(request):
@@ -202,6 +232,13 @@ def actualizar_ticket(request, ticket_id):
                     ticket=ticket_actualizado,
                     usuario=request.user
                 )
+
+            enviar_notificacion(
+                ticket=ticket_actualizado,
+                destinatario_correo=ticket_actualizado.creador.correo,
+                asunto=f'Ticket #{ticket_actualizado.id} actualizado',
+                mensaje=f'Hola {ticket_actualizado.creador.nombre},\n\nTu ticket "{ticket_actualizado.titulo}" fue actualizado.\n\nEstado: {ticket_actualizado.get_estado_display()}\nPrioridad: {ticket_actualizado.prioridad or "Sin asignar"}'
+            )
 
             messages.success(request, 'Ticket actualizado correctamente.')
             return redirect('detalle_ticket', ticket_id=ticket.id)

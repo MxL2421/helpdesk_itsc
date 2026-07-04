@@ -20,6 +20,9 @@ from pathlib import Path
 # Carga las variables de entorno desde el archivo .env
 load_dotenv()
 
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+DEFAULT_FROM_EMAIL = 'helpdesk@itsc.edu.do'
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
