@@ -3,6 +3,7 @@ from .models import Ticket, Usuario, Adjunto, Comentario
 from django.contrib.auth.forms import AuthenticationForm
 from django import forms
 from django.forms import inlineformset_factory
+from django.core.exceptions import ValidationError
 
 
 # Formularios para la creación de tickets, etiquetado de maestros y adjuntado de archivos
@@ -18,15 +19,26 @@ class EtiquetarMaestroForm(forms.Form):
         label='Maestro a etiquetar'
     )
 
+class AdjuntoForm(forms.ModelForm):
+    class Meta:
+        model = Adjunto
+        fields = ['ruta']
+
+    def clean_ruta(self):
+        archivo = self.cleaned_data.get('ruta')
+        if archivo:
+            validar_tipo_archivo(archivo)
+        return archivo
+
+
 AdjuntoFormSet = inlineformset_factory(
     Ticket,
     Adjunto,
-    fields=['ruta'],
+    form=AdjuntoForm,
     extra=5,
     max_num=5,
     can_delete=False
 )
-
 
 # Actualización de tickets
 
@@ -63,5 +75,20 @@ class ComentarioForm(forms.ModelForm):
             'contenido': forms.Textarea(attrs={'rows': 3, 'placeholder': 'Escribe un comentario...'}),
         }
 
+def validar_tipo_archivo(archivo):
+    tipos_permitidos = [
+        'image/jpeg',
+        'image/png',
+        'image/gif',
+        'image/webp',
+        'application/pdf',
+        'application/msword',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    ]
+    if hasattr(archivo, 'content_type') and archivo.content_type not in tipos_permitidos:
+        raise ValidationError(
+            'Tipo de archivo no permitido. Solo se aceptan imágenes, PDF y documentos Word.'
+        )
+    
 class LoginForm(AuthenticationForm):
     username = forms.EmailField(label='Correo institucional')

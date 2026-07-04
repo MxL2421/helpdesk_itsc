@@ -2,6 +2,7 @@
 from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
 from django.utils import timezone
+from datetime import timedelta
 from .forms import TicketForm, ActualizarTicketForm, LoginForm, ReasignarTicketForm, AdjuntoFormSet, EtiquetarMaestroForm, RedirigirTicketForm, ComentarioForm
 from django.contrib.auth import login, logout
 from django.shortcuts import get_object_or_404
@@ -68,6 +69,14 @@ def etiquetar_maestro(request, ticket_id):
                 messages.error(request, 'Este maestro ya está etiquetado en el ticket.')
             else:
                 TicketEtiquetado.objects.create(ticket=ticket, usuario=maestro)
+
+                enviar_notificacion(
+                    ticket=ticket,
+                    destinatario_correo=maestro.correo,
+                    asunto=f'Has sido etiquetado en el ticket #{ticket.id}',
+                    mensaje=f'Hola {maestro.nombre},\n\nFuiste etiquetado como observador en el ticket "{ticket.titulo}".\n\nPuedes consultar los detalles del ticket desde el sistema.'
+                )
+
                 messages.success(request, f'{maestro.get_full_name()} fue etiquetado correctamente.')
 
             return redirect('detalle_ticket', ticket_id=ticket.id)
@@ -105,7 +114,25 @@ def lista_tickets(request):
     else:
         tickets = Ticket.objects.filter(creador=request.user)
 
-    return render(request, 'tickets/lista.html', {'tickets': tickets})
+    # Filtro por prioridad
+    prioridad = request.GET.get('prioridad')
+    if prioridad in ['baja', 'media', 'alta']:
+        tickets = tickets.filter(prioridad=prioridad)
+
+    # Filtro por tiempo de duración
+    duracion = request.GET.get('duracion')
+    if duracion == 'hoy':
+        tickets = tickets.filter(fecha_creacion__date=timezone.now().date())
+    elif duracion == 'semana':
+        tickets = tickets.filter(fecha_creacion__gte=timezone.now() - timedelta(days=7))
+    elif duracion == 'mes':
+        tickets = tickets.filter(fecha_creacion__gte=timezone.now() - timedelta(days=30))
+
+    return render(request, 'tickets/lista.html', {
+        'tickets': tickets,
+        'prioridad_actual': prioridad,
+        'duracion_actual': duracion,
+    })
 
 # Verificar que el ticket existe y quien abre el enlace sea un usuario etiquetado, admin o técnico
 @login_required
