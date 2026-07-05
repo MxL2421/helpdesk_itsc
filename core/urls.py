@@ -11,6 +11,8 @@ urlpatterns = [
     path('tickets/<int:ticket_id>/', views.detalle_ticket, name='detalle_ticket'),
     path('tickets/<int:ticket_id>/autoasignar/', views.autoasignar_ticket, name='autoasignar_ticket'),
     path('tickets/<int:ticket_id>/actualizar/', views.actualizar_ticket, name='actualizar_ticket'),
+    path('tickets/<int:ticket_id>/reasignar/', views.reasignar_ticket, name='reasignar_ticket'),
     path('tickets/<int:ticket_id>/reabrir/', views.reabrir_ticket, name='reabrir_ticket'),
     path('tickets/<int:ticket_id>/etiquetar/', views.etiquetar_maestro, name='etiquetar_maestro'),
+    path('tickets/<int:ticket_id>/redirigir/', views.redirigir_ticket, name='redirigir_ticket'),
 ]

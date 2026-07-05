@@ -14,11 +14,7 @@
     <div class="flex items-center h-20 px-6 gap-4">
       <img src="{% static 'img/logo.png' %}" alt="Logo" class="h-20 w-auto">
       <span class="text-sm font-normal text-gray-800 self-end mb-1 -ml-6">
-<<<<<<< HEAD
-        {{ user.get_full_name|default:user.correo }}
-=======
        {{ user.get_full_name|default:user.correo }}
->>>>>>> 07dd818dbede500cc1d289efe1339c28d8eca926
       </span>
       <form method="post" action="{% url 'logout' %}" class="ml-auto">
         {% csrf_token %}
