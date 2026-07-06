@@ -4,6 +4,7 @@ from django.contrib.auth.forms import AuthenticationForm
 from django import forms
 from django.forms import inlineformset_factory
 from django.core.exceptions import ValidationError
+from django.contrib.auth.forms import PasswordChangeForm
 
 
 # Formularios para la creación de tickets, etiquetado de maestros y adjuntado de archivos
@@ -99,6 +100,13 @@ def validar_tipo_archivo(archivo):
         raise ValidationError(
             'Tipo de archivo no permitido. Solo se aceptan imágenes, PDF y documentos Word.'
         )
+    
+class CambiarContrasenaForm(PasswordChangeForm):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['old_password'].label = 'Contraseña actual'
+        self.fields['new_password1'].label = 'Nueva contraseña'
+        self.fields['new_password2'].label = 'Confirmar nueva contraseña'
     
 class LoginForm(AuthenticationForm):
     username = forms.EmailField(label='Correo institucional')

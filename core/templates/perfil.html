@@ -1,0 +1,33 @@
+{% extends 'base.html' %}
+{% block title %}Mi Perfil{% endblock %}
+
+{% block content %}
+<div class="border border-gray-300 rounded-lg p-4 bg-gray-100 flex-1 m-8">
+  <h1 class="text-center text-red-500 font-semibold mb-6">Mi Perfil</h1>
+
+  <!-- Datos del usuario -->
+  <div class="bg-white rounded p-4 mb-6 space-y-2">
+    <p><strong>Nombre:</strong> {{ user.nombre }} {{ user.apellido }}</p>
+    <p><strong>Correo:</strong> {{ user.correo }}</p>
+    <p><strong>Rol:</strong> {{ user.get_rol_display }}</p>
+    {% if user.carrera %}
+      <p><strong>Carrera:</strong> {{ user.carrera }}</p>
+    {% endif %}
+    {% if user.matricula %}
+      <p><strong>Matrícula:</strong> {{ user.matricula }}</p>
+    {% endif %}
+  </div>
+
+  <!-- Cambiar contraseña -->
+  <h2 class="font-semibold mb-3">Cambiar contraseña</h2>
+  <div class="bg-white rounded p-4">
+    <form method="post">
+      {% csrf_token %}
+      {{ form.as_p }}
+      <button type="submit" class="mt-3 bg-red-600 text-white px-4 py-2 rounded text-sm hover:bg-red-700">
+        Guardar nueva contraseña
+      </button>
+    </form>
+  </div>
+</div>
+{% endblock %}

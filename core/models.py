@@ -33,6 +33,13 @@ class Usuario(AbstractBaseUser, PermissionsMixin):
         'estudiante': '@est.itsc.edu.do',
         'maestro': '@doc.itsc.edu.do',
     }
+    
+    areas = models.ManyToManyField(
+    'Categoria',
+    blank=True,
+    related_name='tecnicos',
+    verbose_name='Áreas asignadas'
+    )
 
     nombre = models.CharField(max_length=100)
     apellido = models.CharField(max_length=100)
@@ -91,6 +98,7 @@ class Ticket(models.Model):
     fecha_creacion = models.DateTimeField(auto_now_add=True)
     fecha_modificacion = models.DateTimeField(auto_now=True)
     fecha_cierre = models.DateTimeField(null=True, blank=True)
+    fecha_limite = models.DateTimeField(null=True, blank=True)
     creador = models.ForeignKey(Usuario, on_delete=models.PROTECT, related_name='tickets_creados', db_column='creador_id')
     tecnico = models.ForeignKey(Usuario, on_delete=models.SET_NULL, null=True, blank=True, related_name='tickets_asignados', db_column='tecnico_id')
     categoria = models.ForeignKey(Categoria, on_delete=models.PROTECT, db_column='categoria_id')

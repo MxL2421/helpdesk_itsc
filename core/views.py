@@ -1,5 +1,5 @@
 from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth import login, logout
+from django.contrib.auth import login, logout, update_session_auth_hash
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponseForbidden
 from django.contrib import messages
@@ -10,12 +10,12 @@ from datetime import timedelta
 from .forms import (
     TicketForm, ActualizarTicketForm, LoginForm,
     AdjuntoFormSet, ReasignarTicketForm, EtiquetarMaestroForm,
-    RedirigirTicketForm, ComentarioForm
+    RedirigirTicketForm, ComentarioForm, CambiarContrasenaForm
 )
 from .models import Ticket, HistorialTicket, TicketEtiquetado, Comentario, Notificacion
 
 
-# ─── FUNCIÓN AUXILIAR DE NOTIFICACIONES ────────────────────────────────────────
+# ─── FUNCIONES AUXILIARES ────────────────────────────────────────
 
 def enviar_notificacion(ticket, destinatario_correo, asunto, mensaje, destinatario_usuario=None):
     notificacion = Notificacion.objects.create(
@@ -47,6 +47,16 @@ def enviar_notificacion(ticket, destinatario_correo, asunto, mensaje, destinatar
         notificacion.fecha_envio = timezone.now()
         notificacion.save()
 
+def calcular_fecha_limite(ticket):
+    TIEMPOS = {
+        'alta': timedelta(hours=4),
+        'media': timedelta(hours=24),
+        'baja': timedelta(hours=72),
+    }
+    if ticket.prioridad and ticket.prioridad in TIEMPOS:
+        return ticket.fecha_creacion + TIEMPOS[ticket.prioridad]
+    return None
+
 
 # ─── INICIO ────────────────────────────────────────────────────────────────────
 
@@ -63,14 +73,28 @@ def login_view(request):
             user = form.get_user()
             login(request, user)
 
-            if user.rol == 'administrador':
-                return redirect('/admin/')
+            if user.rol in ['administrador', 'tecnico']:
+                return redirect('dashboard')
             else:
                 return redirect('lista_tickets')
     else:
         form = LoginForm()
 
     return render(request, 'auth/login.html', {'form': form})
+
+@login_required
+def perfil(request):
+    if request.method == 'POST':
+        form = CambiarContrasenaForm(request.user, request.POST)
+        if form.is_valid():
+            user = form.save()
+            update_session_auth_hash(request, user)
+            messages.success(request, 'Contraseña cambiada correctamente.')
+            return redirect('perfil')
+    else:
+        form = CambiarContrasenaForm(request.user)
+
+    return render(request, 'perfil.html', {'form': form})
 
 
 def logout_view(request):
@@ -93,6 +117,59 @@ def notificaciones(request):
 
 
 # ─── TICKETS ───────────────────────────────────────────────────────────────────
+
+@login_required
+def dashboard(request):
+    if request.user.rol not in ['administrador', 'tecnico']:
+        return HttpResponseForbidden('No tienes permiso para ver el dashboard.')
+
+    ahora = timezone.now()
+
+    if request.user.rol == 'tecnico':
+        areas = request.user.areas.all()
+        if areas.exists():
+            tickets_base = Ticket.objects.filter(categoria__in=areas)
+        else:
+            tickets_base = Ticket.objects.none()
+    else:
+        tickets_base = Ticket.objects.all()
+
+    total = tickets_base.count()
+
+    pendientes = tickets_base.filter(
+        estado__in=['nuevo', 'en_revision', 'en_progreso']
+    ).count()
+
+    resueltos = tickets_base.filter(estado='cerrado').count()
+
+    por_expirar = tickets_base.filter(
+        estado__in=['nuevo', 'en_revision', 'en_progreso'],
+        fecha_limite__isnull=False,
+        fecha_limite__lte=ahora + timedelta(hours=2),
+        fecha_limite__gte=ahora
+    ).count()
+
+    expirados = tickets_base.filter(
+        estado__in=['nuevo', 'en_revision', 'en_progreso'],
+        fecha_limite__isnull=False,
+        fecha_limite__lt=ahora
+    ).count()
+
+    tickets_urgentes = tickets_base.filter(
+        estado__in=['nuevo', 'en_revision', 'en_progreso'],
+        fecha_limite__isnull=False,
+        fecha_limite__lte=ahora + timedelta(hours=2)
+    ).order_by('fecha_limite')[:5]
+
+    return render(request, 'dashboard.html', {
+        'total': total,
+        'pendientes': pendientes,
+        'resueltos': resueltos,
+        'por_expirar': por_expirar,
+        'expirados': expirados,
+        'tickets_urgentes': tickets_urgentes,
+        'ahora': ahora,
+    })
 
 @login_required
 def crear_ticket(request):
@@ -144,8 +221,14 @@ def crear_ticket(request):
 
 @login_required
 def lista_tickets(request):
-    if request.user.rol in ['administrador', 'tecnico']:
+    if request.user.rol == 'administrador':
         tickets = Ticket.objects.all()
+    elif request.user.rol == 'tecnico':
+        areas = request.user.areas.all()
+        if areas.exists():
+            tickets = Ticket.objects.filter(categoria__in=areas)
+        else:
+            tickets = Ticket.objects.none()
     else:
         tickets = Ticket.objects.filter(creador=request.user)
 
@@ -225,6 +308,10 @@ def autoasignar_ticket(request, ticket_id):
         messages.error(request, 'Este ticket ya tiene un técnico asignado.')
         return redirect('detalle_ticket', ticket_id=ticket.id)
 
+    if not request.user.areas.filter(id=ticket.categoria.id).exists():
+        messages.error(request, 'No puedes autoasignarte un ticket fuera de tu área.')
+        return redirect('detalle_ticket', ticket_id=ticket.id)
+
     ticket.tecnico = request.user
     ticket.save()
 
@@ -274,13 +361,16 @@ def actualizar_ticket(request, ticket_id):
                 )
 
             if prioridad_anterior != ticket_actualizado.prioridad:
+                ticket_actualizado.fecha_limite = calcular_fecha_limite(ticket_actualizado)
+                ticket_actualizado.save()
+                
                 HistorialTicket.objects.create(
                     campo='prioridad',
                     valor_anterior=prioridad_anterior,
                     valor_nuevo=ticket_actualizado.prioridad,
                     ticket=ticket_actualizado,
                     usuario=request.user
-                )
+                    )
 
             enviar_notificacion(
                 ticket=ticket_actualizado,
@@ -457,3 +547,4 @@ def redirigir_ticket(request, ticket_id):
         form = RedirigirTicketForm(instance=ticket)
 
     return render(request, 'tickets/redirigir.html', {'form': form, 'ticket': ticket})
+
