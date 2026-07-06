@@ -1,24 +1,104 @@
-# Create your views here.
-from django.shortcuts import render, redirect
-from django.contrib.auth.decorators import login_required
-from django.utils import timezone
-from datetime import timedelta
-from .forms import TicketForm, ActualizarTicketForm, LoginForm, ReasignarTicketForm, AdjuntoFormSet, EtiquetarMaestroForm, RedirigirTicketForm, ComentarioForm
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login, logout
-from django.shortcuts import get_object_or_404
+from django.contrib.auth.decorators import login_required
 from django.http import HttpResponseForbidden
 from django.contrib import messages
-from .models import Ticket, HistorialTicket, TicketEtiquetado, Comentario, Notificacion
 from django.core.mail import send_mail
+from django.utils import timezone
+from datetime import timedelta
 
+from .forms import (
+    TicketForm, ActualizarTicketForm, LoginForm,
+    AdjuntoFormSet, ReasignarTicketForm, EtiquetarMaestroForm,
+    RedirigirTicketForm, ComentarioForm
+)
+from .models import Ticket, HistorialTicket, TicketEtiquetado, Comentario, Notificacion
+
+
+# ─── FUNCIÓN AUXILIAR DE NOTIFICACIONES ────────────────────────────────────────
+
+def enviar_notificacion(ticket, destinatario_correo, asunto, mensaje, destinatario_usuario=None):
+    notificacion = Notificacion.objects.create(
+        asunto=asunto,
+        mensaje=mensaje,
+        correo_destino=destinatario_correo,
+        ticket=ticket,
+        destinatario=destinatario_usuario
+    )
+
+    es_estudiante = destinatario_usuario and destinatario_usuario.rol == 'estudiante'
+
+    if es_estudiante:
+        try:
+            send_mail(
+                subject=asunto,
+                message=mensaje,
+                from_email=None,
+                recipient_list=[destinatario_correo],
+                fail_silently=False,
+            )
+            notificacion.enviada = True
+            notificacion.fecha_envio = timezone.now()
+            notificacion.save()
+        except Exception:
+            pass
+    else:
+        notificacion.enviada = True
+        notificacion.fecha_envio = timezone.now()
+        notificacion.save()
+
+
+# ─── INICIO ────────────────────────────────────────────────────────────────────
 
 def inicio(request):
     return render(request, 'inicio.html')
+
+
+# ─── AUTENTICACIÓN ─────────────────────────────────────────────────────────────
+
+def login_view(request):
+    if request.method == 'POST':
+        form = LoginForm(request, data=request.POST)
+        if form.is_valid():
+            user = form.get_user()
+            login(request, user)
+
+            if user.rol == 'administrador':
+                return redirect('/admin/')
+            else:
+                return redirect('lista_tickets')
+    else:
+        form = LoginForm()
+
+    return render(request, 'auth/login.html', {'form': form})
+
+
+def logout_view(request):
+    logout(request)
+    return redirect('login')
+
+
+# ─── NOTIFICACIONES ────────────────────────────────────────────────────────────
+
+@login_required
+def notificaciones(request):
+    notifs = Notificacion.objects.filter(
+        destinatario=request.user,
+        leida=False
+    ).order_by('-fecha_envio')
+
+    notifs.update(leida=True)
+
+    return render(request, 'notificaciones.html', {'notificaciones': notifs})
+
+
+# ─── TICKETS ───────────────────────────────────────────────────────────────────
 
 @login_required
 def crear_ticket(request):
     if request.method == 'POST':
         form = TicketForm(request.POST)
+        formset = AdjuntoFormSet(request.POST, request.FILES)
         if form.is_valid():
             ticket = form.save(commit=False)
             ticket.creador = request.user
@@ -42,14 +122,16 @@ def crear_ticket(request):
                         ticket=ticket,
                         destinatario_correo=maestro.correo,
                         asunto=f'Has sido etiquetado en el ticket #{ticket.id}',
-                        mensaje=f'Hola {maestro.nombre},\n\nFuiste etiquetado como observador en el ticket "{ticket.titulo}".\n\nPuedes consultar los detalles desde el sistema.'
+                        mensaje=f'Hola {maestro.nombre},\n\nFuiste etiquetado como observador en el ticket "{ticket.titulo}".\n\nPuedes consultar los detalles desde el sistema.',
+                        destinatario_usuario=maestro
                     )
 
             enviar_notificacion(
                 ticket=ticket,
                 destinatario_correo=ticket.creador.correo,
                 asunto=f'Ticket #{ticket.id} creado: {ticket.titulo}',
-                mensaje=f'Hola {ticket.creador.nombre},\n\nTu ticket "{ticket.titulo}" fue creado correctamente.\n\nCategoría: {ticket.categoria}\n\nPuedes hacerle seguimiento desde el sistema.'
+                mensaje=f'Hola {ticket.creador.nombre},\n\nTu ticket "{ticket.titulo}" fue creado correctamente.\n\nCategoría: {ticket.categoria}\n\nPuedes hacerle seguimiento desde el sistema.',
+                destinatario_usuario=ticket.creador
             )
 
             return redirect('lista_tickets')
@@ -59,70 +141,6 @@ def crear_ticket(request):
 
     return render(request, 'tickets/crear.html', {'form': form, 'formset': formset})
 
-@login_required
-def etiquetar_maestro(request, ticket_id):
-    ticket = get_object_or_404(Ticket, id=ticket_id)
-    user = request.user
-
-    es_creador = ticket.creador == user
-    es_tecnico_o_admin = user.rol in ['tecnico', 'administrador']
-
-    if not (es_creador or es_tecnico_o_admin):
-        return HttpResponseForbidden('No tienes permiso para etiquetar maestros en este ticket.')
-
-    if request.method == 'POST':
-        form = EtiquetarMaestroForm(request.POST)
-        if form.is_valid():
-            maestros = form.cleaned_data['maestros']
-            etiquetados = []
-            ya_etiquetados = []
-
-            for maestro in maestros:
-                ya_etiquetado = TicketEtiquetado.objects.filter(ticket=ticket, usuario=maestro).exists()
-                if ya_etiquetado:
-                    ya_etiquetados.append(maestro.get_full_name())
-                else:
-                    TicketEtiquetado.objects.create(ticket=ticket, usuario=maestro)
-                    enviar_notificacion(
-                        ticket=ticket,
-                        destinatario_correo=maestro.correo,
-                        asunto=f'Has sido etiquetado en el ticket #{ticket.id}',
-                        mensaje=f'Hola {maestro.nombre},\n\nFuiste etiquetado como observador en el ticket "{ticket.titulo}".\n\nPuedes consultar los detalles desde el sistema.'
-                    )
-                    etiquetados.append(maestro.get_full_name())
-
-            if etiquetados:
-                messages.success(request, f'Maestros etiquetados: {", ".join(etiquetados)}.')
-            if ya_etiquetados:
-                messages.error(request, f'Ya estaban etiquetados: {", ".join(ya_etiquetados)}.')
-
-            return redirect('detalle_ticket', ticket_id=ticket.id)
-    else:
-        form = EtiquetarMaestroForm()
-
-    return render(request, 'tickets/etiquetar.html', {'form': form, 'ticket': ticket})
-
-def enviar_notificacion(ticket, destinatario_correo, asunto, mensaje):
-    notificacion = Notificacion.objects.create(
-        asunto=asunto,
-        mensaje=mensaje,
-        correo_destino=destinatario_correo,
-        ticket=ticket
-    )
-
-    try:
-        send_mail(
-            subject=asunto,
-            message=mensaje,
-            from_email=None,
-            recipient_list=[destinatario_correo],
-            fail_silently=False,
-        )
-        notificacion.enviada = True
-        notificacion.fecha_envio = timezone.now()
-        notificacion.save()
-    except Exception:
-        pass
 
 @login_required
 def lista_tickets(request):
@@ -131,12 +149,10 @@ def lista_tickets(request):
     else:
         tickets = Ticket.objects.filter(creador=request.user)
 
-    # Filtro por prioridad
     prioridad = request.GET.get('prioridad')
     if prioridad in ['baja', 'media', 'alta']:
         tickets = tickets.filter(prioridad=prioridad)
 
-    # Filtro por tiempo de duración
     duracion = request.GET.get('duracion')
     if duracion == 'hoy':
         tickets = tickets.filter(fecha_creacion__date=timezone.now().date())
@@ -151,7 +167,7 @@ def lista_tickets(request):
         'duracion_actual': duracion,
     })
 
-# Verificar que el ticket existe y quien abre el enlace sea un usuario etiquetado, admin o técnico
+
 @login_required
 def detalle_ticket(request, ticket_id):
     ticket = get_object_or_404(Ticket, id=ticket_id)
@@ -195,23 +211,6 @@ def detalle_ticket(request, ticket_id):
     })
 
 
-def login_view(request):
-    if request.method == 'POST':
-        form = LoginForm(request, data=request.POST)
-        if form.is_valid():
-            user = form.get_user()
-            login(request, user)
-
-            if user.rol == 'administrador':
-                return redirect('/admin/')
-            else:
-                return redirect('lista_tickets')
-    else:
-        form = LoginForm()
-
-    return render(request, 'auth/login.html', {'form': form})
-
-# Un ticket solo puede tomarlo un técnico si este no ha sido asignado
 @login_required
 def autoasignar_ticket(request, ticket_id):
     ticket = get_object_or_404(Ticket, id=ticket_id)
@@ -233,14 +232,13 @@ def autoasignar_ticket(request, ticket_id):
         ticket=ticket,
         destinatario_correo=ticket.tecnico.correo,
         asunto=f'Te has autoasignado el ticket #{ticket.id}',
-        mensaje=f'Hola {ticket.tecnico.nombre},\n\nTe has autoasignado el ticket "{ticket.titulo}".\n\nCategoría: {ticket.categoria}\nPrioridad: {ticket.prioridad or "Sin asignar"}'
+        mensaje=f'Hola {ticket.tecnico.nombre},\n\nTe has autoasignado el ticket "{ticket.titulo}".\n\nCategoría: {ticket.categoria}\nPrioridad: {ticket.prioridad or "Sin asignar"}',
+        destinatario_usuario=ticket.tecnico
     )
 
     messages.success(request, 'Te has autoasignado el ticket correctamente.')
     return redirect('detalle_ticket', ticket_id=ticket.id)
 
-
-# Solo el técnico asignado puede actualizar la prioridad y el estado del ticket
 
 @login_required
 def actualizar_ticket(request, ticket_id):
@@ -288,7 +286,8 @@ def actualizar_ticket(request, ticket_id):
                 ticket=ticket_actualizado,
                 destinatario_correo=ticket_actualizado.creador.correo,
                 asunto=f'Ticket #{ticket_actualizado.id} actualizado',
-                mensaje=f'Hola {ticket_actualizado.creador.nombre},\n\nTu ticket "{ticket_actualizado.titulo}" fue actualizado.\n\nEstado: {ticket_actualizado.get_estado_display()}\nPrioridad: {ticket_actualizado.prioridad or "Sin asignar"}'
+                mensaje=f'Hola {ticket_actualizado.creador.nombre},\n\nTu ticket "{ticket_actualizado.titulo}" fue actualizado.\n\nEstado: {ticket_actualizado.get_estado_display()}\nPrioridad: {ticket_actualizado.prioridad or "Sin asignar"}',
+                destinatario_usuario=ticket_actualizado.creador
             )
 
             messages.success(request, 'Ticket actualizado correctamente.')
@@ -298,7 +297,47 @@ def actualizar_ticket(request, ticket_id):
 
     return render(request, 'tickets/actualizar.html', {'form': form, 'ticket': ticket})
 
-# Solo el administrador puede reabrir tickets y solo se pueden reabrir tickets 
+
+@login_required
+def reasignar_ticket(request, ticket_id):
+    ticket = get_object_or_404(Ticket, id=ticket_id)
+
+    if request.user.rol != 'administrador':
+        return HttpResponseForbidden('Solo el administrador puede reasignar tickets.')
+
+    tecnico_anterior = ticket.tecnico
+
+    if request.method == 'POST':
+        form = ReasignarTicketForm(request.POST, instance=ticket)
+        if form.is_valid():
+            ticket_actualizado = form.save()
+
+            if tecnico_anterior != ticket_actualizado.tecnico:
+                HistorialTicket.objects.create(
+                    campo='tecnico',
+                    valor_anterior=str(tecnico_anterior) if tecnico_anterior else 'Sin asignar',
+                    valor_nuevo=str(ticket_actualizado.tecnico) if ticket_actualizado.tecnico else 'Sin asignar',
+                    ticket=ticket_actualizado,
+                    usuario=request.user
+                )
+
+                if ticket_actualizado.tecnico:
+                    enviar_notificacion(
+                        ticket=ticket_actualizado,
+                        destinatario_correo=ticket_actualizado.tecnico.correo,
+                        asunto=f'Se te asignó el ticket #{ticket_actualizado.id}',
+                        mensaje=f'Hola {ticket_actualizado.tecnico.nombre},\n\nEl administrador te ha asignado el ticket "{ticket_actualizado.titulo}".\n\nCategoría: {ticket_actualizado.categoria}\nPrioridad: {ticket_actualizado.prioridad or "Sin asignar"}',
+                        destinatario_usuario=ticket_actualizado.tecnico
+                    )
+
+            messages.success(request, 'Técnico reasignado correctamente.')
+            return redirect('detalle_ticket', ticket_id=ticket.id)
+    else:
+        form = ReasignarTicketForm(instance=ticket)
+
+    return render(request, 'tickets/reasignar.html', {'form': form, 'ticket': ticket})
+
+
 @login_required
 def reabrir_ticket(request, ticket_id):
     ticket = get_object_or_404(Ticket, id=ticket_id)
@@ -336,45 +375,52 @@ def reabrir_ticket(request, ticket_id):
     messages.success(request, f'Ticket reabierto, vuelve al estado: {ticket.get_estado_display()}.')
     return redirect('detalle_ticket', ticket_id=ticket.id)
 
-# Solo el admin puede reasignar tickets
 
 @login_required
-def reasignar_ticket(request, ticket_id):
+def etiquetar_maestro(request, ticket_id):
     ticket = get_object_or_404(Ticket, id=ticket_id)
+    user = request.user
 
-    if request.user.rol != 'administrador':
-        return HttpResponseForbidden('Solo el administrador puede reasignar tickets.')
+    es_creador = ticket.creador == user
+    es_tecnico_o_admin = user.rol in ['tecnico', 'administrador']
 
-    tecnico_anterior = ticket.tecnico
+    if not (es_creador or es_tecnico_o_admin):
+        return HttpResponseForbidden('No tienes permiso para etiquetar maestros en este ticket.')
 
     if request.method == 'POST':
-        form = ReasignarTicketForm(request.POST, instance=ticket)
+        form = EtiquetarMaestroForm(request.POST)
         if form.is_valid():
-            ticket_actualizado = form.save()
+            maestros = form.cleaned_data['maestros']
+            etiquetados = []
+            ya_etiquetados = []
 
-            if tecnico_anterior != ticket_actualizado.tecnico:
-                HistorialTicket.objects.create(
-                    campo='tecnico',
-                    valor_anterior=str(tecnico_anterior) if tecnico_anterior else 'Sin asignar',
-                    valor_nuevo=str(ticket_actualizado.tecnico) if ticket_actualizado.tecnico else 'Sin asignar',
-                    ticket=ticket_actualizado,
-                    usuario=request.user
-                )
-
-                if ticket_actualizado.tecnico:
+            for maestro in maestros:
+                ya_etiquetado = TicketEtiquetado.objects.filter(ticket=ticket, usuario=maestro).exists()
+                if ya_etiquetado:
+                    ya_etiquetados.append(maestro.get_full_name())
+                else:
+                    TicketEtiquetado.objects.create(ticket=ticket, usuario=maestro)
                     enviar_notificacion(
-                        ticket=ticket_actualizado,
-                        destinatario_correo=ticket_actualizado.tecnico.correo,
-                        asunto=f'Se te asignó el ticket #{ticket_actualizado.id}',
-                        mensaje=f'Hola {ticket_actualizado.tecnico.nombre},\n\nEl administrador te ha asignado el ticket "{ticket_actualizado.titulo}".\n\nCategoría: {ticket_actualizado.categoria}\nPrioridad: {ticket_actualizado.prioridad or "Sin asignar"}'
+                        ticket=ticket,
+                        destinatario_correo=maestro.correo,
+                        asunto=f'Has sido etiquetado en el ticket #{ticket.id}',
+                        mensaje=f'Hola {maestro.nombre},\n\nFuiste etiquetado como observador en el ticket "{ticket.titulo}".\n\nPuedes consultar los detalles desde el sistema.',
+                        destinatario_usuario=maestro
                     )
+                    etiquetados.append(maestro.get_full_name())
 
-            messages.success(request, 'Técnico reasignado correctamente.')
+            if etiquetados:
+                messages.success(request, f'Maestros etiquetados: {", ".join(etiquetados)}.')
+            if ya_etiquetados:
+                messages.error(request, f'Ya estaban etiquetados: {", ".join(ya_etiquetados)}.')
+
             return redirect('detalle_ticket', ticket_id=ticket.id)
     else:
-        form = ReasignarTicketForm(instance=ticket)
+        form = EtiquetarMaestroForm()
 
-    return render(request, 'tickets/reasignar.html', {'form': form, 'ticket': ticket})
+    return render(request, 'tickets/etiquetar.html', {'form': form, 'ticket': ticket})
+
+
 @login_required
 def redirigir_ticket(request, ticket_id):
     ticket = get_object_or_404(Ticket, id=ticket_id)
@@ -411,10 +457,3 @@ def redirigir_ticket(request, ticket_id):
         form = RedirigirTicketForm(instance=ticket)
 
     return render(request, 'tickets/redirigir.html', {'form': form, 'ticket': ticket})
-
-
-# Controla el Logout
-
-def logout_view(request):
-    logout(request)
-    return redirect('login')

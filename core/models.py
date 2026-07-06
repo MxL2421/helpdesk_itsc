@@ -162,8 +162,10 @@ class Notificacion(models.Model):
     mensaje = models.TextField()
     correo_destino = models.EmailField(max_length=150)
     enviada = models.BooleanField(default=False)
+    leida = models.BooleanField(default=False)
     fecha_envio = models.DateTimeField(null=True, blank=True)
     ticket = models.ForeignKey(Ticket, on_delete=models.CASCADE, related_name='notificaciones', db_column='ticket_id')
+    destinatario = models.ForeignKey(Usuario, on_delete=models.CASCADE, null=True, blank=True, related_name='notificaciones_recibidas')
 
     class Meta:
         db_table = 'notificacion'
