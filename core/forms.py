@@ -207,3 +207,30 @@ class CategoriaForm(forms.ModelForm):
         labels = {
             'nombre': 'Nombre de la categoría',
         }
+
+class EliminarCategoriaForm(forms.Form):
+    categoria_destino = forms.ModelChoiceField(
+        queryset=Categoria.objects.none(),
+        label='Mover tickets a categoría',
+        required=False,
+        empty_label='Selecciona una categoría destino'
+    )
+    password = forms.CharField(
+        label='Confirma tu contraseña',
+        widget=forms.PasswordInput()
+    )
+
+    def __init__(self, user, categoria_actual, *args, **kwargs):
+        self.user = user
+        super().__init__(*args, **kwargs)
+        self.fields['categoria_destino'].queryset = Categoria.objects.exclude(id=categoria_actual.id)
+
+    def clean_password(self):
+        password = self.cleaned_data.get('password')
+        if not self.user.check_password(password):
+            raise forms.ValidationError('Contraseña incorrecta.')
+        return password
+
+    def clean(self):
+        cleaned_data = super().clean()
+        return cleaned_data

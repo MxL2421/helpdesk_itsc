@@ -767,24 +767,31 @@ def admin_eliminar_categoria(request, categoria_id):
         return HttpResponseForbidden('Acceso denegado.')
 
     categoria = get_object_or_404(Categoria, id=categoria_id)
-
-    tickets_asociados = Ticket.objects.filter(categoria=categoria).count()
+    tickets_asociados = Ticket.objects.filter(categoria=categoria)
+    cantidad = tickets_asociados.count()
 
     if request.method == 'POST':
-        form = ConfirmarPasswordForm(request.user, request.POST)
+        form = EliminarCategoriaForm(request.user, categoria, request.POST)
         if form.is_valid():
-            if tickets_asociados > 0:
-                messages.error(request, f'No se puede eliminar la categoría "{categoria.nombre}" porque tiene {tickets_asociados} ticket(s) asociado(s).')
-                return redirect('admin_categorias')
-            categoria.delete()
-            messages.success(request, f'Categoría "{categoria.nombre}" eliminada correctamente.')
-            return redirect('admin_categorias')
-    else:
-        form = ConfirmarPasswordForm(request.user)
+            categoria_destino = form.cleaned_data.get('categoria_destino')
 
-    return render(request, 'admin/confirmar_eliminar.html', {
+            if cantidad > 0:
+                if not categoria_destino:
+                    form.add_error('categoria_destino', 'Debes seleccionar una categoría destino porque hay tickets asociados.')
+                else:
+                    tickets_asociados.update(categoria=categoria_destino)
+                    categoria.delete()
+                    messages.success(request, f'Categoría eliminada. {cantidad} ticket(s) movidos a "{categoria_destino.nombre}".')
+                    return redirect('admin_categorias')
+            else:
+                categoria.delete()
+                messages.success(request, f'Categoría "{categoria.nombre}" eliminada correctamente.')
+                return redirect('admin_categorias')
+    else:
+        form = EliminarCategoriaForm(request.user, categoria)
+
+    return render(request, 'admin/eliminar_categoria.html', {
         'form': form,
-        'objeto': categoria.nombre,
-        'tipo': 'categoría',
-        'advertencia': f'Esta categoría tiene {tickets_asociados} ticket(s) asociado(s). No podrá eliminarse.' if tickets_asociados > 0 else None
+        'categoria': categoria,
+        'cantidad': cantidad,
     })
