@@ -24,12 +24,7 @@
     <!-- NAV: el menú, igual para todas las páginas de usuario -->
     <nav class="bg-gray-50 border border-gray-300 w-48 h-screen shrink-0">
       <ul class="p-4 space-y-8">
-        <li>
-          <a href="#" class="flex flex-col items-center text-gray-700 hover:text-red-600">
-            <img src="{% static 'img/inicio.png' %}" alt="Inicio" class="h-10 w-auto mb-1">
-            <span class="text-sm">Inicio</span>
-          </a>
-        </li>
+        
         <li>
           <a href="{% url 'crear_ticket' %}" class="flex flex-col items-center text-gray-700 hover:text-red-600">
             <img src="{% static 'img/crear.png' %}" alt="Logo" class="h-10 w-auto">
@@ -42,12 +37,7 @@
             <span class="text-sm">Mis tickets</span>
           </a>
         </li>
-        <li>
-          <a href="#" class="flex flex-col items-center text-gray-700 hover:text-red-600">
-            <img src="{% static 'img/ayuda.png' %}" alt="Logo" class="h-10 w-auto">
-            <span class="text-sm">Ayuda</span>
-          </a>
-        </li>
+       
       </ul>
     </nav>
 
