@@ -1,6 +1,8 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login, logout, update_session_auth_hash
 from django.contrib.auth.decorators import login_required
+from django.db import models as django_models
+from django.db.models import Q
 from django.http import HttpResponseForbidden
 from django.contrib import messages
 from django.core.mail import send_mail
@@ -232,9 +234,24 @@ def lista_tickets(request):
     else:
         tickets = Ticket.objects.filter(creador=request.user)
 
+    # Buscador
+    busqueda = request.GET.get('q')
+    if busqueda:
+        tickets = tickets.filter(
+            Q(titulo__icontains=busqueda) |
+            Q(asunto__icontains=busqueda) |
+            Q(creador__nombre__icontains=busqueda) |
+            Q(creador__apellido__icontains=busqueda)
+        )
+
+    # Filtros comunes (técnico y admin)
     prioridad = request.GET.get('prioridad')
     if prioridad in ['baja', 'media', 'alta']:
         tickets = tickets.filter(prioridad=prioridad)
+
+    estado = request.GET.get('estado')
+    if estado in ['nuevo', 'en_revision', 'en_progreso', 'desestimado', 'cerrado']:
+        tickets = tickets.filter(estado=estado)
 
     duracion = request.GET.get('duracion')
     if duracion == 'hoy':
@@ -244,12 +261,43 @@ def lista_tickets(request):
     elif duracion == 'mes':
         tickets = tickets.filter(fecha_creacion__gte=timezone.now() - timedelta(days=30))
 
+    orden = request.GET.get('orden')
+    if orden == 'az':
+        tickets = tickets.order_by('titulo')
+    elif orden == 'za':
+        tickets = tickets.order_by('-titulo')
+    elif orden == 'reciente':
+        tickets = tickets.order_by('-fecha_creacion')
+    elif orden == 'antiguo':
+        tickets = tickets.order_by('fecha_creacion')
+    else:
+        tickets = tickets.order_by('-fecha_creacion')
+
+    # Filtros solo para administrador
+    categoria = request.GET.get('categoria')
+    if request.user.rol == 'administrador' and categoria:
+        tickets = tickets.filter(categoria__id=categoria)
+
+    tecnico = request.GET.get('tecnico')
+    if request.user.rol == 'administrador' and tecnico:
+        tickets = tickets.filter(tecnico__id=tecnico)
+
+    from .models import Categoria, Usuario
+    categorias = Categoria.objects.all()
+    tecnicos = Usuario.objects.filter(rol='tecnico', activo=True)
+
     return render(request, 'tickets/lista.html', {
         'tickets': tickets,
         'prioridad_actual': prioridad,
         'duracion_actual': duracion,
+        'estado_actual': estado,
+        'orden_actual': orden,
+        'categoria_actual': categoria,
+        'tecnico_actual': tecnico,
+        'busqueda_actual': busqueda,
+        'categorias': categorias,
+        'tecnicos': tecnicos,
     })
-
 
 @login_required
 def detalle_ticket(request, ticket_id):
