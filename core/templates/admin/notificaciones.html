@@ -1,0 +1,66 @@
+{% extends 'base.html' %}
+{% block title %}Historial de Notificaciones{% endblock %}
+
+{% block content %}
+<div class="border border-gray-300 rounded-lg p-4 bg-gray-100 flex-1 m-8">
+  <h1 class="text-red-500 font-semibold mb-4">Historial de Notificaciones</h1>
+
+  <form method="get" class="flex gap-2 mb-4">
+    <input type="text" name="q" value="{{ busqueda_actual|default:'' }}"
+      placeholder="Buscar por asunto o correo..."
+      class="flex-1 border border-gray-300 rounded px-3 py-2 text-sm">
+    <select name="enviada" class="border border-gray-300 rounded px-3 py-2 text-sm">
+      <option value="">Todas</option>
+      <option value="si" {% if enviada_actual == 'si' %}selected{% endif %}>Enviadas</option>
+      <option value="no" {% if enviada_actual == 'no' %}selected{% endif %}>No enviadas</option>
+    </select>
+    <button type="submit" class="bg-red-600 text-white px-4 py-2 rounded text-sm">
+      <i class="fa-solid fa-magnifying-glass"></i>
+    </button>
+    <a href="{% url 'admin_notificaciones' %}" class="bg-gray-200 text-gray-700 px-4 py-2 rounded text-sm hover:bg-gray-300">
+      Limpiar
+    </a>
+  </form>
+
+  <table class="w-full bg-white rounded">
+    <thead class="bg-gray-300">
+      <tr>
+        <th class="p-2 text-sm text-left">Ticket</th>
+        <th class="p-2 text-sm text-left">Asunto</th>
+        <th class="p-2 text-sm text-left">Destinatario</th>
+        <th class="p-2 text-sm text-left">Fecha</th>
+        <th class="p-2 text-sm text-left">Estado</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for notif in notificaciones %}
+      <tr class="border-t hover:bg-gray-50">
+        <td class="p-2 text-sm">
+          {% if notif.ticket %}
+            <a href="{% url 'detalle_ticket' notif.ticket.id %}" class="text-blue-600 hover:underline">
+              #{{ notif.ticket.id }}
+            </a>
+          {% else %}
+            —
+          {% endif %}
+        </td>
+        <td class="p-2 text-sm">{{ notif.asunto }}</td>
+        <td class="p-2 text-sm">{{ notif.correo_destino }}</td>
+        <td class="p-2 text-sm">{{ notif.fecha_envio|date:"d/m/Y H:i"|default:"—" }}</td>
+        <td class="p-2 text-sm">
+          {% if notif.enviada %}
+            <span class="text-green-600 text-xs font-medium">✅ Enviada</span>
+          {% else %}
+            <span class="text-red-600 text-xs font-medium">❌ No enviada</span>
+          {% endif %}
+        </td>
+      </tr>
+      {% empty %}
+      <tr>
+        <td colspan="5" class="p-4 text-center text-gray-500 text-sm">No hay notificaciones.</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

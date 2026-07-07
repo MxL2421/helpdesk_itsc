@@ -121,6 +121,32 @@ def notificaciones(request):
     notifs.update(leida=True)
 
     return render(request, 'notificaciones.html', {'notificaciones': notifs})
+@login_required
+
+def admin_notificaciones(request):
+    if request.user.rol != 'administrador':
+        return HttpResponseForbidden('Acceso denegado.')
+
+    notificaciones = Notificacion.objects.all().order_by('-fecha_envio')
+
+    busqueda = request.GET.get('q')
+    if busqueda:
+        notificaciones = notificaciones.filter(
+            Q(asunto__icontains=busqueda) |
+            Q(correo_destino__icontains=busqueda)
+        )
+
+    enviada = request.GET.get('enviada')
+    if enviada == 'si':
+        notificaciones = notificaciones.filter(enviada=True)
+    elif enviada == 'no':
+        notificaciones = notificaciones.filter(enviada=False)
+
+    return render(request, 'admin/notificaciones.html', {
+        'notificaciones': notificaciones,
+        'busqueda_actual': busqueda,
+        'enviada_actual': enviada,
+    })
 
 
 # ─── TICKETS ───────────────────────────────────────────────────────────────────
