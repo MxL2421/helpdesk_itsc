@@ -12,9 +12,13 @@ from datetime import timedelta
 from .forms import (
     TicketForm, ActualizarTicketForm, LoginForm,
     AdjuntoFormSet, ReasignarTicketForm, EtiquetarMaestroForm,
-    RedirigirTicketForm, ComentarioForm, CambiarContrasenaForm
+    RedirigirTicketForm, ComentarioForm, CambiarContrasenaForm, 
+    CrearUsuarioForm, EditarUsuarioForm, ConfirmarPasswordForm
 )
-from .models import Ticket, HistorialTicket, TicketEtiquetado, Comentario, Notificacion
+from .models import (
+    Ticket, HistorialTicket, TicketEtiquetado, Comentario, Notificacion,
+    Usuario
+)
 
 
 # ─── FUNCIONES AUXILIARES ────────────────────────────────────────
@@ -596,3 +600,88 @@ def redirigir_ticket(request, ticket_id):
 
     return render(request, 'tickets/redirigir.html', {'form': form, 'ticket': ticket})
 
+# ─── PANEL ADMINISTRATIVO — USUARIOS ──────────────────────────────────────────
+
+@login_required
+def admin_usuarios(request):
+    if request.user.rol != 'administrador':
+        return HttpResponseForbidden('Acceso denegado.')
+
+    usuarios = Usuario.objects.all().order_by('rol', 'apellido')
+
+    busqueda = request.GET.get('q')
+    if busqueda:
+        usuarios = usuarios.filter(
+            Q(nombre__icontains=busqueda) |
+            Q(apellido__icontains=busqueda) |
+            Q(correo__icontains=busqueda)
+        )
+
+    rol = request.GET.get('rol')
+    if rol in ['administrador', 'tecnico', 'estudiante', 'maestro']:
+        usuarios = usuarios.filter(rol=rol)
+
+    return render(request, 'admin/usuarios.html', {
+        'usuarios': usuarios,
+        'busqueda_actual': busqueda,
+        'rol_actual': rol,
+    })
+
+
+@login_required
+def admin_crear_usuario(request):
+    if request.user.rol != 'administrador':
+        return HttpResponseForbidden('Acceso denegado.')
+
+    if request.method == 'POST':
+        form = CrearUsuarioForm(request.POST)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Usuario creado correctamente.')
+            return redirect('admin_usuarios')
+    else:
+        form = CrearUsuarioForm()
+
+    return render(request, 'admin/crear_usuario.html', {'form': form})
+
+
+@login_required
+def admin_editar_usuario(request, usuario_id):
+    if request.user.rol != 'administrador':
+        return HttpResponseForbidden('Acceso denegado.')
+
+    usuario = get_object_or_404(Usuario, id=usuario_id)
+
+    if request.method == 'POST':
+        form = EditarUsuarioForm(request.POST, instance=usuario)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Usuario actualizado correctamente.')
+            return redirect('admin_usuarios')
+    else:
+        form = EditarUsuarioForm(instance=usuario)
+
+    return render(request, 'admin/editar_usuario.html', {'form': form, 'usuario': usuario})
+
+
+@login_required
+def admin_eliminar_usuario(request, usuario_id):
+    if request.user.rol != 'administrador':
+        return HttpResponseForbidden('Acceso denegado.')
+
+    usuario = get_object_or_404(Usuario, id=usuario_id)
+
+    if request.method == 'POST':
+        form = ConfirmarPasswordForm(request.user, request.POST)
+        if form.is_valid():
+            usuario.delete()
+            messages.success(request, f'Usuario {usuario.get_full_name()} eliminado correctamente.')
+            return redirect('admin_usuarios')
+    else:
+        form = ConfirmarPasswordForm(request.user)
+
+    return render(request, 'admin/confirmar_eliminar.html', {
+        'form': form,
+        'objeto': usuario.get_full_name(),
+        'tipo': 'usuario'
+    })

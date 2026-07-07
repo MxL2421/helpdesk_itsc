@@ -17,5 +17,9 @@ urlpatterns = [
     path('tickets/<int:ticket_id>/reabrir/', views.reabrir_ticket, name='reabrir_ticket'),
     path('tickets/<int:ticket_id>/etiquetar/', views.etiquetar_maestro, name='etiquetar_maestro'),
     path('tickets/<int:ticket_id>/redirigir/', views.redirigir_ticket, name='redirigir_ticket'),
+    path('panel/usuarios/', views.admin_usuarios, name='admin_usuarios'),
+    path('panel/usuarios/crear/', views.admin_crear_usuario, name='admin_crear_usuario'),
+    path('panel/usuarios/<int:usuario_id>/editar/', views.admin_editar_usuario, name='admin_editar_usuario'),
+    path('panel/usuarios/<int:usuario_id>/eliminar/', views.admin_eliminar_usuario, name='admin_eliminar_usuario'),
     path('logout/', views.logout_view, name='logout'),
 ]
