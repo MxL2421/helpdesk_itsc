@@ -1,5 +1,5 @@
 from django import forms
-from .models import Ticket, Usuario, Adjunto, Comentario
+from .models import Ticket, Usuario, Adjunto, Comentario, Categoria
 from django.contrib.auth.forms import AuthenticationForm
 from django import forms
 from django.forms import inlineformset_factory
@@ -199,3 +199,11 @@ class ConfirmarPasswordForm(forms.Form):
         if not self.user.check_password(password):
             raise forms.ValidationError('Contraseña incorrecta.')
         return password
+    
+class CategoriaForm(forms.ModelForm):
+    class Meta:
+        model = Categoria
+        fields = ['nombre']
+        labels = {
+            'nombre': 'Nombre de la categoría',
+        }

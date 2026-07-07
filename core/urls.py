@@ -21,5 +21,9 @@ urlpatterns = [
     path('panel/usuarios/crear/', views.admin_crear_usuario, name='admin_crear_usuario'),
     path('panel/usuarios/<int:usuario_id>/editar/', views.admin_editar_usuario, name='admin_editar_usuario'),
     path('panel/usuarios/<int:usuario_id>/eliminar/', views.admin_eliminar_usuario, name='admin_eliminar_usuario'),
+    path('panel/categorias/', views.admin_categorias, name='admin_categorias'),
+    path('panel/categorias/crear/', views.admin_crear_categoria, name='admin_crear_categoria'),
+    path('panel/categorias/<int:categoria_id>/editar/', views.admin_editar_categoria, name='admin_editar_categoria'),
+    path('panel/categorias/<int:categoria_id>/eliminar/', views.admin_eliminar_categoria, name='admin_eliminar_categoria'),
     path('logout/', views.logout_view, name='logout'),
 ]

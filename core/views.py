@@ -13,11 +13,12 @@ from .forms import (
     TicketForm, ActualizarTicketForm, LoginForm,
     AdjuntoFormSet, ReasignarTicketForm, EtiquetarMaestroForm,
     RedirigirTicketForm, ComentarioForm, CambiarContrasenaForm, 
-    CrearUsuarioForm, EditarUsuarioForm, ConfirmarPasswordForm
+    CrearUsuarioForm, EditarUsuarioForm, ConfirmarPasswordForm,
+    CategoriaForm
 )
 from .models import (
     Ticket, HistorialTicket, TicketEtiquetado, Comentario, Notificacion,
-    Usuario
+    Usuario, Categoria
 )
 
 
@@ -684,4 +685,80 @@ def admin_eliminar_usuario(request, usuario_id):
         'form': form,
         'objeto': usuario.get_full_name(),
         'tipo': 'usuario'
+    })
+
+# ─── PANEL ADMINISTRATIVO — CATEGORÍAS ────────────────────────────────────────
+
+@login_required
+def admin_categorias(request):
+    if request.user.rol != 'administrador':
+        return HttpResponseForbidden('Acceso denegado.')
+
+    categorias = Categoria.objects.all().order_by('nombre')
+
+    return render(request, 'admin/categorias.html', {'categorias': categorias})
+
+
+@login_required
+def admin_crear_categoria(request):
+    if request.user.rol != 'administrador':
+        return HttpResponseForbidden('Acceso denegado.')
+
+    if request.method == 'POST':
+        form = CategoriaForm(request.POST)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Categoría creada correctamente.')
+            return redirect('admin_categorias')
+    else:
+        form = CategoriaForm()
+
+    return render(request, 'admin/crear_categoria.html', {'form': form})
+
+
+@login_required
+def admin_editar_categoria(request, categoria_id):
+    if request.user.rol != 'administrador':
+        return HttpResponseForbidden('Acceso denegado.')
+
+    categoria = get_object_or_404(Categoria, id=categoria_id)
+
+    if request.method == 'POST':
+        form = CategoriaForm(request.POST, instance=categoria)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Categoría actualizada correctamente.')
+            return redirect('admin_categorias')
+    else:
+        form = CategoriaForm(instance=categoria)
+
+    return render(request, 'admin/editar_categoria.html', {'form': form, 'categoria': categoria})
+
+
+@login_required
+def admin_eliminar_categoria(request, categoria_id):
+    if request.user.rol != 'administrador':
+        return HttpResponseForbidden('Acceso denegado.')
+
+    categoria = get_object_or_404(Categoria, id=categoria_id)
+
+    tickets_asociados = Ticket.objects.filter(categoria=categoria).count()
+
+    if request.method == 'POST':
+        form = ConfirmarPasswordForm(request.user, request.POST)
+        if form.is_valid():
+            if tickets_asociados > 0:
+                messages.error(request, f'No se puede eliminar la categoría "{categoria.nombre}" porque tiene {tickets_asociados} ticket(s) asociado(s).')
+                return redirect('admin_categorias')
+            categoria.delete()
+            messages.success(request, f'Categoría "{categoria.nombre}" eliminada correctamente.')
+            return redirect('admin_categorias')
+    else:
+        form = ConfirmarPasswordForm(request.user)
+
+    return render(request, 'admin/confirmar_eliminar.html', {
+        'form': form,
+        'objeto': categoria.nombre,
+        'tipo': 'categoría',
+        'advertencia': f'Esta categoría tiene {tickets_asociados} ticket(s) asociado(s). No podrá eliminarse.' if tickets_asociados > 0 else None
     })
