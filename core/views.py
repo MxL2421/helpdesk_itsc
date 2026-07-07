@@ -14,7 +14,7 @@ from .forms import (
     AdjuntoFormSet, ReasignarTicketForm, EtiquetarMaestroForm,
     RedirigirTicketForm, ComentarioForm, CambiarContrasenaForm, 
     CrearUsuarioForm, EditarUsuarioForm, ConfirmarPasswordForm,
-    CategoriaForm
+    CategoriaForm, EliminarCategoriaForm
 )
 from .models import (
     Ticket, HistorialTicket, TicketEtiquetado, Comentario, Notificacion,
@@ -708,9 +708,10 @@ def admin_eliminar_usuario(request, usuario_id):
         form = ConfirmarPasswordForm(request.user)
 
     return render(request, 'admin/confirmar_eliminar.html', {
-        'form': form,
-        'objeto': usuario.get_full_name(),
-        'tipo': 'usuario'
+    'form': form,
+    'objeto': usuario.get_full_name(),
+    'tipo': 'usuario',
+    'url_cancelar': 'admin_usuarios'
     })
 
 # ─── PANEL ADMINISTRATIVO — CATEGORÍAS ────────────────────────────────────────
