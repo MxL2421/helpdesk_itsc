@@ -11,10 +11,10 @@ from django.contrib.auth.forms import PasswordChangeForm
 
 class TicketForm(forms.ModelForm):
     maestros = forms.ModelMultipleChoiceField(
-        queryset=Usuario.objects.filter(rol='maestro', activo=True),
-        required=False,
-        label='Etiquetar maestros (opcional)',
-        widget=forms.CheckboxSelectMultiple
+    queryset=Usuario.objects.filter(rol='maestro', is_active=True),
+    required=False,
+    label='Etiquetar maestros (opcional)',
+    widget=forms.SelectMultiple(attrs={'style': 'width: 100%'})
     )
 
     class Meta:
@@ -24,10 +24,10 @@ class TicketForm(forms.ModelForm):
 
 class EtiquetarMaestroForm(forms.Form):
     maestros = forms.ModelMultipleChoiceField(
-        queryset=Usuario.objects.filter(rol='maestro', activo=True),
+        queryset=Usuario.objects.filter(rol='maestro', is_active=True),
         required=False,
         label='Etiquetar maestros',
-        widget=forms.CheckboxSelectMultiple
+        widget=forms.SelectMultiple(attrs={'style': 'width: 100%'})
     )
 
 class AdjuntoForm(forms.ModelForm):
@@ -67,7 +67,7 @@ class ReasignarTicketForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields['tecnico'].queryset = Usuario.objects.filter(rol='tecnico', activo=True)
+        self.fields['tecnico'].queryset = Usuario.objects.filter(rol='tecnico', is_active=True)
 
 # Redirección de ticket (cambio de categoría)
 
@@ -171,7 +171,7 @@ class CrearUsuarioForm(forms.ModelForm):
 class EditarUsuarioForm(forms.ModelForm):
     class Meta:
         model = Usuario
-        fields = ['nombre', 'apellido', 'correo', 'rol', 'matricula', 'carrera', 'areas', 'activo']
+        fields = ['nombre', 'apellido', 'correo', 'rol', 'matricula', 'carrera', 'areas', 'is_active']
         labels = {
             'nombre': 'Nombre',
             'apellido': 'Apellido',
@@ -180,7 +180,7 @@ class EditarUsuarioForm(forms.ModelForm):
             'matricula': 'Matrícula',
             'carrera': 'Carrera',
             'areas': 'Áreas asignadas',
-            'activo': 'Usuario activo',
+            'is_active': 'Usuario activo',
         }
 
 

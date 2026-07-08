@@ -47,7 +47,7 @@ class Usuario(AbstractBaseUser, PermissionsMixin):
     correo = models.EmailField(max_length=150, unique=True)
     carrera = models.CharField(max_length=150, null=True, blank=True)
     rol = models.CharField(max_length=20, choices=ROL_CHOICES)
-    activo = models.BooleanField(default=True)
+    is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
 

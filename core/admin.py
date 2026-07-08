@@ -5,8 +5,8 @@ from .models import Usuario, Categoria, Ticket
 
 class UsuarioAdmin(UserAdmin):
     model = Usuario
-    list_display = ('correo', 'nombre', 'apellido', 'rol', 'activo', 'is_staff')
-    list_filter = ('rol', 'activo')
+    list_display = ('correo', 'nombre', 'apellido', 'rol', 'is_active', 'is_staff')
+    list_filter = ('rol', 'is_active')
     search_fields = ('nombre', 'apellido', 'correo', 'matricula')
     ordering = ('correo',)
 
@@ -14,7 +14,7 @@ class UsuarioAdmin(UserAdmin):
         (None, {'fields': ('correo', 'password')}),
         ('Información personal', {'fields': ('nombre', 'apellido', 'matricula', 'carrera', 'rol')}),
         ('Áreas asignadas', {'fields': ('areas',)}),
-        ('Permisos', {'fields': ('activo', 'is_staff', 'is_superuser', 'groups', 'user_permissions')}),
+        ('Permisos', {'fields': ('is_active', 'is_staff', 'is_superuser', 'groups', 'user_permissions')}),
     )
 
     add_fieldsets = (

@@ -79,14 +79,12 @@ def login_view(request):
         if form.is_valid():
             user = form.get_user()
             login(request, user)
-
             if user.rol in ['administrador', 'tecnico']:
                 return redirect('dashboard')
             else:
                 return redirect('lista_tickets')
     else:
         form = LoginForm()
-
     return render(request, 'auth/login.html', {'form': form})
 
 @login_required
@@ -315,7 +313,7 @@ def lista_tickets(request):
 
     from .models import Categoria, Usuario
     categorias = Categoria.objects.all()
-    tecnicos = Usuario.objects.filter(rol='tecnico', activo=True)
+    tecnicos = Usuario.objects.filter(rol='tecnico', is_active=True)
 
     return render(request, 'tickets/lista.html', {
         'tickets': tickets,
@@ -698,6 +696,21 @@ def admin_eliminar_usuario(request, usuario_id):
 
     usuario = get_object_or_404(Usuario, id=usuario_id)
 
+    if usuario == request.user:
+        messages.error(request, 'No puedes eliminarte a ti mismo.')
+        return redirect('admin_usuarios')
+
+    tiene_actividad = (
+        Ticket.objects.filter(creador=usuario).exists() or
+        Ticket.objects.filter(tecnico=usuario).exists() or
+        Comentario.objects.filter(autor=usuario).exists() or
+        HistorialTicket.objects.filter(usuario=usuario).exists()
+    )
+
+    if tiene_actividad:
+        messages.error(request, f'No se puede eliminar a {usuario.get_full_name()} porque tiene actividad en el sistema. Desactívalo en su lugar.')
+        return redirect('admin_usuarios')
+
     if request.method == 'POST':
         form = ConfirmarPasswordForm(request.user, request.POST)
         if form.is_valid():
@@ -708,12 +721,43 @@ def admin_eliminar_usuario(request, usuario_id):
         form = ConfirmarPasswordForm(request.user)
 
     return render(request, 'admin/confirmar_eliminar.html', {
-    'form': form,
-    'objeto': usuario.get_full_name(),
-    'tipo': 'usuario',
-    'url_cancelar': 'admin_usuarios'
+        'form': form,
+        'objeto': usuario.get_full_name(),
+        'tipo': 'usuario',
+        'url_cancelar': 'admin_usuarios'
     })
 
+
+@login_required
+def admin_toggle_usuario(request, usuario_id):
+    if request.user.rol != 'administrador':
+        return HttpResponseForbidden('Acceso denegado.')
+
+    usuario = get_object_or_404(Usuario, id=usuario_id)
+
+    if usuario == request.user:
+        messages.error(request, 'No puedes desactivar tu propia cuenta.')
+        return redirect('admin_usuarios')
+
+    if request.method == 'POST':
+        form = ConfirmarPasswordForm(request.user, request.POST)
+        if form.is_valid():
+            usuario.is_active = not usuario.is_active
+            usuario.save()
+            estado = 'activado' if usuario.is_active else 'desactivado'
+            messages.success(request, f'Usuario {usuario.get_full_name()} {estado} correctamente.')
+            return redirect('admin_usuarios')
+    else:
+        form = ConfirmarPasswordForm(request.user)
+
+    accion = 'desactivar' if usuario.activo else 'activar'
+
+    return render(request, 'admin/confirmar_toggle.html', {
+        'form': form,
+        'usuario': usuario,
+        'accion': accion,
+        'url_cancelar': 'admin_usuarios'
+    })
 # ─── PANEL ADMINISTRATIVO — CATEGORÍAS ────────────────────────────────────────
 
 @login_required

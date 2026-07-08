@@ -25,6 +25,7 @@ urlpatterns = [
     path('panel/categorias/crear/', views.admin_crear_categoria, name='admin_crear_categoria'),
     path('panel/categorias/<int:categoria_id>/editar/', views.admin_editar_categoria, name='admin_editar_categoria'),
     path('panel/categorias/<int:categoria_id>/eliminar/', views.admin_eliminar_categoria, name='admin_eliminar_categoria'),
+    path('panel/usuarios/<int:usuario_id>/toggle/', views.admin_toggle_usuario, name='admin_toggle_usuario'),
     path('panel/notificaciones/', views.admin_notificaciones, name='admin_notificaciones'),
     path('logout/', views.logout_view, name='logout'),
 ]

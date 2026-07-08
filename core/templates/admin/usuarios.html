@@ -10,6 +10,14 @@
     </a>
   </div>
 
+  {% if messages %}
+    {% for message in messages %}
+      <p class="text-sm mb-3 {% if message.tags == 'error' %}text-red-600{% else %}text-green-600{% endif %}">
+        {{ message }}
+      </p>
+    {% endfor %}
+  {% endif %}
+
   <!-- Buscador y filtros -->
   <form method="get" class="flex gap-2 mb-4">
     <input type="text" name="q" value="{{ busqueda_actual|default:'' }}"
@@ -47,15 +55,30 @@
         <td class="p-2 text-sm">{{ usuario.correo }}</td>
         <td class="p-2 text-sm">{{ usuario.get_rol_display }}</td>
         <td class="p-2 text-sm">
-          {% if usuario.activo %}
+          {% if usuario.is_active %}
             <span class="text-green-600 text-xs font-medium">Activo</span>
           {% else %}
             <span class="text-red-600 text-xs font-medium">Inactivo</span>
           {% endif %}
         </td>
-        <td class="p-2 text-sm flex gap-2">
-          <a href="{% url 'admin_editar_usuario' usuario.id %}" class="text-blue-600 hover:underline text-xs">Editar</a>
-          <a href="{% url 'admin_eliminar_usuario' usuario.id %}" class="text-red-600 hover:underline text-xs">Eliminar</a>
+        <td class="p-2 text-sm">
+          <div class="flex gap-2">
+            <a href="{% url 'admin_editar_usuario' usuario.id %}"
+               class="text-blue-600 hover:underline text-xs">
+              Editar
+            </a>
+            <a href="{% url 'admin_toggle_usuario' usuario.id %}"
+              class="{% if usuario.is_active %}text-yellow-600{% else %}text-green-600{% endif %} hover:underline text-xs">
+            {% if usuario.is_active %}Desactivar{% else %}Activar{% endif %}
+          </a>
+          
+            {% if not usuario.tickets_creados.exists and not usuario.tickets_asignados.exists %}
+              <a href="{% url 'admin_eliminar_usuario' usuario.id %}"
+                 class="text-red-600 hover:underline text-xs">
+                Eliminar
+              </a>
+            {% endif %}
+          </div>
         </td>
       </tr>
       {% empty %}
