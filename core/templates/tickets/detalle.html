@@ -140,47 +140,8 @@
 <div class="border border-gray-300 rounded-lg p-6 bg-white mt-6">
   <h2 class="text-sm font-semibold text-gray-900 mb-4">Comentarios</h2>
 
-  <div class="space-y-4">
-    {% for comentario in comentarios %}
-      <div class="border-l-2 {% if comentario.es_privado %}border-yellow-400{% else %}border-gray-200{% endif %} pl-4">
-        <div class="flex items-center gap-2 flex-wrap">
-          <span class="text-sm font-medium text-gray-900">{{ comentario.autor }}</span>
-          <span class="text-xs text-gray-400">{{ comentario.fecha }}</span>
-          {% if comentario.es_privado %}
-            <span class="text-xs font-medium px-2 py-0.5 rounded-full bg-yellow-100 text-yellow-800">Privado</span>
-          {% endif %}
-        </div>
-        <p class="text-sm text-gray-700 mt-1 whitespace-pre-line">{{ comentario.contenido }}</p>
-      </div>
-    {% empty %}
-      <p class="text-sm text-gray-400">No hay comentarios aún.</p>
-    {% endfor %}
-  </div>
-
-  {% if user.rol == 'tecnico' or user.rol == 'administrador' %}
-    <form method="post" class="mt-6 border-t border-gray-200 pt-4 space-y-3">
-      {% csrf_token %}
-
-      {{ form.contenido }}
-
-      <div class="flex items-center justify-between">
-        <div>
-          {% if user.rol == 'administrador' or ticket.tecnico == user %}
-            <label class="inline-flex items-center gap-2 text-sm text-gray-600">
-              {{ form.es_privado }} Comentario privado
-            </label>
-          {% else %}
-            <input type="hidden" name="es_privado" value="False">
-          {% endif %}
-        </div>
-
-        <button type="submit"
-                class="text-sm font-medium px-4 py-2 rounded-md bg-red-600 text-white hover:bg-red-700">
-          Comentar
-        </button>
-      </div>
-    </form>
-   {% endif %}
+  <!-- ⬇️ aquí sigue la lista de comentarios y el formulario, todavía pendiente -->
 
 </div>
+
 {% endblock %}

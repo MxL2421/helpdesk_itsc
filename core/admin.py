@@ -13,6 +13,7 @@ class UsuarioAdmin(UserAdmin):
     fieldsets = (
         (None, {'fields': ('correo', 'password')}),
         ('Información personal', {'fields': ('nombre', 'apellido', 'matricula', 'carrera', 'rol')}),
+        ('Áreas asignadas', {'fields': ('areas',)}),
         ('Permisos', {'fields': ('activo', 'is_staff', 'is_superuser', 'groups', 'user_permissions')}),
     )
 

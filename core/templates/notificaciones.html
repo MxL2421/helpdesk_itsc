@@ -1,0 +1,18 @@
+{% extends 'base.html' %}
+{% block title %}Notificaciones{% endblock %}
+
+{% block content %}
+<div class="border border-gray-300 rounded-lg p-4 bg-gray-100 flex-1 m-8">
+  <h1 class="text-center text-red-500 font-semibold mb-4">Notificaciones</h1>
+
+  {% for notif in notificaciones %}
+    <div class="bg-white rounded p-3 mb-2 border border-gray-200">
+      <p class="font-medium text-sm">{{ notif.asunto }}</p>
+      <p class="text-sm text-gray-600 mt-1">{{ notif.mensaje }}</p>
+      <p class="text-xs text-gray-400 mt-1">{{ notif.fecha_envio|date:"d/m/Y H:i" }}</p>
+    </div>
+  {% empty %}
+    <p class="text-center text-gray-500 text-sm">No tienes notificaciones nuevas.</p>
+  {% endfor %}
+</div>
+{% endblock %}

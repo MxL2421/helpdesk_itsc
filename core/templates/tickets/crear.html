@@ -1,4 +1,3 @@
-
 {% extends 'base.html' %}
 {% load static %}
 {% block title %}Crear Ticket{% endblock %}
@@ -8,128 +7,94 @@
 
   <form method="post" enctype="multipart/form-data" class="space-y-4">
     {% csrf_token %}
+    {{ formset.management_form }}
 
-
-    <!-- FILA 1: Categoria y Prioridad -->
-    <div class="flex gap-6">
-      <div class="flex-1">
-        <label class="block text-sm font-medium text-black-700 mb-1">Categoría</label>
-        {{ form.categoria }}
-      </div>
-      <div class="flex-1">
-        <label class="block text-sm font-medium text-black-700 mb-1">Prioridad</label>
-        {{ form.prioridad }}
-      </div>
-
-    </div>
-      <div class="w-full mt-6">
-        <label class="block text-sm font-medium text-black-700 mb-2">
-            titulo
-        </label>
-            {{ form.titulo}}
-        
+    <!-- Categoría -->
+    <div class="flex-1">
+      <label class="block text-sm font-medium text-black-700 mb-1">Categoría</label>
+      {{ form.categoria }}
     </div>
 
-    <!-- FILA 2: Asunto y Fecha -->
-    <div class="flex gap-6 items-end">
-     <!-- Asunto -->
+    <!-- Título -->
+    <div class="w-full mt-6">
+      <label class="block text-sm font-medium text-black-700 mb-2">Título</label>
+      {{ form.titulo }}
+    </div>
 
+    <!-- Asunto -->
     <div class="w-full max-w-2xl">
-        <label class="block text-sm font-medium text-black-700 mb-2">
-            Asunto
-        </label>
-
-        {{ form.asunto }}
+      <label class="block text-sm font-medium text-black-700 mb-2">Asunto</label>
+      {{ form.asunto }}
     </div>
 
-    <!-- Fecha -->
-    <div class="w-48">
-        <label class="block text-sm font-medium text-black-700 mb-2">
-           
-        </label>
-
-        {{ form.fecha }}
-    </div>
-    
-    </div>
-     <!-- FILA 3: CC -->
- <div>
-    <label class="block text-sm font-medium text-gray-700 mb-2">
-        {{ form.maestros.label }}
-    </label>
-    <div class="space-y-2">
-        {% for checkbox in form.maestros %}
-            <div class="flex items-center gap-2">
-                {{ checkbox.tag }}
-                <label for="{{ checkbox.id_for_label }}">
-                    {{ checkbox.choice_label }}
-                </label>
-            </div>
-        {% endfor %}
-    </div>
-</div>
-  
-
-    <!-- FILA 4: Descripción (textarea grande) -->
+    <!-- Maestros -->
     <div>
-      {{ form.descripcion }}
+      <label class="block text-sm font-medium text-gray-700 mb-2">
+        {{ form.maestros.label }}
+      </label>
+      <div class="space-y-2">
+        {% for checkbox in form.maestros %}
+          <div class="flex items-center gap-2">
+            {{ checkbox.tag }}
+            <label for="{{ checkbox.id_for_label }}">{{ checkbox.choice_label }}</label>
+          </div>
+        {% endfor %}
+      </div>
     </div>
 
-    <!-- FILA 5: Adjuntos -->
+    <!-- Adjuntos -->
+    <div id="adjuntos-container" class="hidden">
+      {% for adjunto_form in formset %}
+        <div class="adjunto-item">
+          {{ adjunto_form.ruta }}
+        </div>
+      {% endfor %}
+    </div>
 
+    <button type="button" id="agregar-adjunto" class="text-blue-600 text-sm mt-2">
+      + Agregar archivo
+    </button>
+    <div id="archivos-seleccionados" class="text-sm text-gray-600 mt-1"></div>
+    <p class="text-xs text-gray-500">Máximo 5 archivos. Solo imágenes, PDF y Word.</p>
 
+    <script>
+      const container = document.getElementById('adjuntos-container');
+      const items = container.querySelectorAll('.adjunto-item input[type="file"]');
+      const boton = document.getElementById('agregar-adjunto');
+      const listaArchivos = document.getElementById('archivos-seleccionados');
+      let visibles = 0;
 
-{{ formset.management_form }}
-
-
-<button type="button" id="agregar-adjunto" class="text-blue-600 text-sm mt-2">
-    + Agregar archivo
-</button>
-<div id="archivos-seleccionados" class="text-sm text-gray-600 mt-1"></div>
-<p class="text-xs text-gray-500">Máximo 5 archivos. Solo imágenes, PDF y Word.</p>
-
-<script>
-    const container = document.getElementById('adjuntos-container');
-    const items = container.querySelectorAll('.adjunto-item input[type="file"]');
-    const boton = document.getElementById('agregar-adjunto');
-    const listaArchivos = document.getElementById('archivos-seleccionados');
-    let visibles = 0;
-
-    boton.addEventListener('click', function () {
+      boton.addEventListener('click', function () {
         if (visibles < items.length) {
-            items[visibles].click();
+          items[visibles].click();
         }
-    });
-    items.forEach((input) => {
-      input.addEventListener('change', function () {
-         if (this.files.length > 0) {
-            visibles++;
+      });
 
+      items.forEach((input) => {
+        input.setAttribute('accept', '.jpg,.jpeg,.png,.gif,.webp,.pdf,.doc,.docx');
+        input.addEventListener('change', function () {
+          if (this.files.length > 0) {
+            visibles++;
             const nombre = this.files[0].name;
             const p = document.createElement('p');
-
             p.textContent = `✓ ${nombre}`;
-            // o: p.textContent = "✓ " + nombre;
-
             listaArchivos.appendChild(p);
+            if (visibles >= items.length) {
+              boton.style.display = 'none';
+            }
+          }
+        });
+      });
+    </script>
 
-             if (visibles >= items.length) {
-                boton.style.display = 'none';
-             }
-        }
-    });
-});
-</script>
-    <!-- BOTÓN ENVIAR -->
+    <!-- Botón enviar -->
     <div class="flex justify-center pt-2">
       <button type="submit" class="flex flex-col items-center bg-red-600 hover:bg-red-700 rounded-lg px-10 py-2 transition">
         <i class="fa-solid fa-paper-plane text-xl"></i>
-        
         <span class="text-sm mt-1">Enviar</span>
       </button>
     </div>
 
   </form>
- </div>
-
+</div>
 {% endblock %}
