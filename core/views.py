@@ -1,6 +1,8 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login, logout, update_session_auth_hash
 from django.contrib.auth.decorators import login_required
+from django.db import models as django_models
+from django.db.models import Q
 from django.http import HttpResponseForbidden
 from django.contrib import messages
 from django.core.mail import send_mail
@@ -10,9 +12,14 @@ from datetime import timedelta
 from .forms import (
     TicketForm, ActualizarTicketForm, LoginForm,
     AdjuntoFormSet, ReasignarTicketForm, EtiquetarMaestroForm,
-    RedirigirTicketForm, ComentarioForm, CambiarContrasenaForm
+    RedirigirTicketForm, ComentarioForm, CambiarContrasenaForm, 
+    CrearUsuarioForm, EditarUsuarioForm, ConfirmarPasswordForm,
+    CategoriaForm, EliminarCategoriaForm
 )
-from .models import Ticket, HistorialTicket, TicketEtiquetado, Comentario, Notificacion
+from .models import (
+    Ticket, HistorialTicket, TicketEtiquetado, Comentario, Notificacion,
+    Usuario, Categoria
+)
 
 
 # ─── FUNCIONES AUXILIARES ────────────────────────────────────────
@@ -72,14 +79,12 @@ def login_view(request):
         if form.is_valid():
             user = form.get_user()
             login(request, user)
-
             if user.rol in ['administrador', 'tecnico']:
                 return redirect('dashboard')
             else:
                 return redirect('lista_tickets')
     else:
         form = LoginForm()
-
     return render(request, 'auth/login.html', {'form': form})
 
 @login_required
@@ -114,6 +119,32 @@ def notificaciones(request):
     notifs.update(leida=True)
 
     return render(request, 'notificaciones.html', {'notificaciones': notifs})
+@login_required
+
+def admin_notificaciones(request):
+    if request.user.rol != 'administrador':
+        return HttpResponseForbidden('Acceso denegado.')
+
+    notificaciones = Notificacion.objects.all().order_by('-fecha_envio')
+
+    busqueda = request.GET.get('q')
+    if busqueda:
+        notificaciones = notificaciones.filter(
+            Q(asunto__icontains=busqueda) |
+            Q(correo_destino__icontains=busqueda)
+        )
+
+    enviada = request.GET.get('enviada')
+    if enviada == 'si':
+        notificaciones = notificaciones.filter(enviada=True)
+    elif enviada == 'no':
+        notificaciones = notificaciones.filter(enviada=False)
+
+    return render(request, 'admin/notificaciones.html', {
+        'notificaciones': notificaciones,
+        'busqueda_actual': busqueda,
+        'enviada_actual': enviada,
+    })
 
 
 # ─── TICKETS ───────────────────────────────────────────────────────────────────
@@ -232,9 +263,24 @@ def lista_tickets(request):
     else:
         tickets = Ticket.objects.filter(creador=request.user)
 
+    # Buscador
+    busqueda = request.GET.get('q')
+    if busqueda:
+        tickets = tickets.filter(
+            Q(titulo__icontains=busqueda) |
+            Q(asunto__icontains=busqueda) |
+            Q(creador__nombre__icontains=busqueda) |
+            Q(creador__apellido__icontains=busqueda)
+        )
+
+    # Filtros comunes (técnico y admin)
     prioridad = request.GET.get('prioridad')
     if prioridad in ['baja', 'media', 'alta']:
         tickets = tickets.filter(prioridad=prioridad)
+
+    estado = request.GET.get('estado')
+    if estado in ['nuevo', 'en_revision', 'en_progreso', 'desestimado', 'cerrado']:
+        tickets = tickets.filter(estado=estado)
 
     duracion = request.GET.get('duracion')
     if duracion == 'hoy':
@@ -244,12 +290,43 @@ def lista_tickets(request):
     elif duracion == 'mes':
         tickets = tickets.filter(fecha_creacion__gte=timezone.now() - timedelta(days=30))
 
+    orden = request.GET.get('orden')
+    if orden == 'az':
+        tickets = tickets.order_by('titulo')
+    elif orden == 'za':
+        tickets = tickets.order_by('-titulo')
+    elif orden == 'reciente':
+        tickets = tickets.order_by('-fecha_creacion')
+    elif orden == 'antiguo':
+        tickets = tickets.order_by('fecha_creacion')
+    else:
+        tickets = tickets.order_by('-fecha_creacion')
+
+    # Filtros solo para administrador
+    categoria = request.GET.get('categoria')
+    if request.user.rol == 'administrador' and categoria:
+        tickets = tickets.filter(categoria__id=categoria)
+
+    tecnico = request.GET.get('tecnico')
+    if request.user.rol == 'administrador' and tecnico:
+        tickets = tickets.filter(tecnico__id=tecnico)
+
+    from .models import Categoria, Usuario
+    categorias = Categoria.objects.all()
+    tecnicos = Usuario.objects.filter(rol='tecnico', is_active=True)
+
     return render(request, 'tickets/lista.html', {
         'tickets': tickets,
         'prioridad_actual': prioridad,
         'duracion_actual': duracion,
+        'estado_actual': estado,
+        'orden_actual': orden,
+        'categoria_actual': categoria,
+        'tecnico_actual': tecnico,
+        'busqueda_actual': busqueda,
+        'categorias': categorias,
+        'tecnicos': tecnicos,
     })
-
 
 @login_required
 def detalle_ticket(request, ticket_id):
@@ -548,3 +625,218 @@ def redirigir_ticket(request, ticket_id):
 
     return render(request, 'tickets/redirigir.html', {'form': form, 'ticket': ticket})
 
+# ─── PANEL ADMINISTRATIVO — USUARIOS ──────────────────────────────────────────
+
+@login_required
+def admin_usuarios(request):
+    if request.user.rol != 'administrador':
+        return HttpResponseForbidden('Acceso denegado.')
+
+    usuarios = Usuario.objects.all().order_by('rol', 'apellido')
+
+    busqueda = request.GET.get('q')
+    if busqueda:
+        usuarios = usuarios.filter(
+            Q(nombre__icontains=busqueda) |
+            Q(apellido__icontains=busqueda) |
+            Q(correo__icontains=busqueda)
+        )
+
+    rol = request.GET.get('rol')
+    if rol in ['administrador', 'tecnico', 'estudiante', 'maestro']:
+        usuarios = usuarios.filter(rol=rol)
+
+    return render(request, 'admin/usuarios.html', {
+        'usuarios': usuarios,
+        'busqueda_actual': busqueda,
+        'rol_actual': rol,
+    })
+
+
+@login_required
+def admin_crear_usuario(request):
+    if request.user.rol != 'administrador':
+        return HttpResponseForbidden('Acceso denegado.')
+
+    if request.method == 'POST':
+        form = CrearUsuarioForm(request.POST)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Usuario creado correctamente.')
+            return redirect('admin_usuarios')
+    else:
+        form = CrearUsuarioForm()
+
+    return render(request, 'admin/crear_usuario.html', {'form': form})
+
+
+@login_required
+def admin_editar_usuario(request, usuario_id):
+    if request.user.rol != 'administrador':
+        return HttpResponseForbidden('Acceso denegado.')
+
+    usuario = get_object_or_404(Usuario, id=usuario_id)
+
+    if request.method == 'POST':
+        form = EditarUsuarioForm(request.POST, instance=usuario)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Usuario actualizado correctamente.')
+            return redirect('admin_usuarios')
+    else:
+        form = EditarUsuarioForm(instance=usuario)
+
+    return render(request, 'admin/editar_usuario.html', {'form': form, 'usuario': usuario})
+
+
+@login_required
+def admin_eliminar_usuario(request, usuario_id):
+    if request.user.rol != 'administrador':
+        return HttpResponseForbidden('Acceso denegado.')
+
+    usuario = get_object_or_404(Usuario, id=usuario_id)
+
+    if usuario == request.user:
+        messages.error(request, 'No puedes eliminarte a ti mismo.')
+        return redirect('admin_usuarios')
+
+    tiene_actividad = (
+        Ticket.objects.filter(creador=usuario).exists() or
+        Ticket.objects.filter(tecnico=usuario).exists() or
+        Comentario.objects.filter(autor=usuario).exists() or
+        HistorialTicket.objects.filter(usuario=usuario).exists()
+    )
+
+    if tiene_actividad:
+        messages.error(request, f'No se puede eliminar a {usuario.get_full_name()} porque tiene actividad en el sistema. Desactívalo en su lugar.')
+        return redirect('admin_usuarios')
+
+    if request.method == 'POST':
+        form = ConfirmarPasswordForm(request.user, request.POST)
+        if form.is_valid():
+            usuario.delete()
+            messages.success(request, f'Usuario {usuario.get_full_name()} eliminado correctamente.')
+            return redirect('admin_usuarios')
+    else:
+        form = ConfirmarPasswordForm(request.user)
+
+    return render(request, 'admin/confirmar_eliminar.html', {
+        'form': form,
+        'objeto': usuario.get_full_name(),
+        'tipo': 'usuario',
+        'url_cancelar': 'admin_usuarios'
+    })
+
+
+@login_required
+def admin_toggle_usuario(request, usuario_id):
+    if request.user.rol != 'administrador':
+        return HttpResponseForbidden('Acceso denegado.')
+
+    usuario = get_object_or_404(Usuario, id=usuario_id)
+
+    if usuario == request.user:
+        messages.error(request, 'No puedes desactivar tu propia cuenta.')
+        return redirect('admin_usuarios')
+
+    if request.method == 'POST':
+        form = ConfirmarPasswordForm(request.user, request.POST)
+        if form.is_valid():
+            usuario.is_active = not usuario.is_active
+            usuario.save()
+            estado = 'activado' if usuario.is_active else 'desactivado'
+            messages.success(request, f'Usuario {usuario.get_full_name()} {estado} correctamente.')
+            return redirect('admin_usuarios')
+    else:
+        form = ConfirmarPasswordForm(request.user)
+
+    accion = 'desactivar' if usuario.activo else 'activar'
+
+    return render(request, 'admin/confirmar_toggle.html', {
+        'form': form,
+        'usuario': usuario,
+        'accion': accion,
+        'url_cancelar': 'admin_usuarios'
+    })
+# ─── PANEL ADMINISTRATIVO — CATEGORÍAS ────────────────────────────────────────
+
+@login_required
+def admin_categorias(request):
+    if request.user.rol != 'administrador':
+        return HttpResponseForbidden('Acceso denegado.')
+
+    categorias = Categoria.objects.all().order_by('nombre')
+
+    return render(request, 'admin/categorias.html', {'categorias': categorias})
+
+
+@login_required
+def admin_crear_categoria(request):
+    if request.user.rol != 'administrador':
+        return HttpResponseForbidden('Acceso denegado.')
+
+    if request.method == 'POST':
+        form = CategoriaForm(request.POST)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Categoría creada correctamente.')
+            return redirect('admin_categorias')
+    else:
+        form = CategoriaForm()
+
+    return render(request, 'admin/crear_categoria.html', {'form': form})
+
+
+@login_required
+def admin_editar_categoria(request, categoria_id):
+    if request.user.rol != 'administrador':
+        return HttpResponseForbidden('Acceso denegado.')
+
+    categoria = get_object_or_404(Categoria, id=categoria_id)
+
+    if request.method == 'POST':
+        form = CategoriaForm(request.POST, instance=categoria)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Categoría actualizada correctamente.')
+            return redirect('admin_categorias')
+    else:
+        form = CategoriaForm(instance=categoria)
+
+    return render(request, 'admin/editar_categoria.html', {'form': form, 'categoria': categoria})
+
+
+@login_required
+def admin_eliminar_categoria(request, categoria_id):
+    if request.user.rol != 'administrador':
+        return HttpResponseForbidden('Acceso denegado.')
+
+    categoria = get_object_or_404(Categoria, id=categoria_id)
+    tickets_asociados = Ticket.objects.filter(categoria=categoria)
+    cantidad = tickets_asociados.count()
+
+    if request.method == 'POST':
+        form = EliminarCategoriaForm(request.user, categoria, request.POST)
+        if form.is_valid():
+            categoria_destino = form.cleaned_data.get('categoria_destino')
+
+            if cantidad > 0:
+                if not categoria_destino:
+                    form.add_error('categoria_destino', 'Debes seleccionar una categoría destino porque hay tickets asociados.')
+                else:
+                    tickets_asociados.update(categoria=categoria_destino)
+                    categoria.delete()
+                    messages.success(request, f'Categoría eliminada. {cantidad} ticket(s) movidos a "{categoria_destino.nombre}".')
+                    return redirect('admin_categorias')
+            else:
+                categoria.delete()
+                messages.success(request, f'Categoría "{categoria.nombre}" eliminada correctamente.')
+                return redirect('admin_categorias')
+    else:
+        form = EliminarCategoriaForm(request.user, categoria)
+
+    return render(request, 'admin/eliminar_categoria.html', {
+        'form': form,
+        'categoria': categoria,
+        'cantidad': cantidad,
+    })

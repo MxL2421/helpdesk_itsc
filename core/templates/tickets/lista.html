@@ -1,35 +1,185 @@
 {% extends 'base.html' %}
-{% block title %}Mis Reportes{% endblock %}
 
+{% block title %}Mis Reportes{% endblock %}
+ 
 {% block content %}
 <div class="border border-gray-300 rounded-lg p-4 bg-gray-100 flex-1 m-8">
-  <h1 class="text-center text-red-500 font-semibold mb-8">Mis Reportes</h1>
+<h1 class="text-center text-red-500 font-semibold mb-4">Mis Reportes</h1>
+ 
+  <!-- Buscador y botón de filtros -->
+<form method="get" class="flex gap-2 mb-4">
+<input
 
-  <table class="w-full bg-white rounded">
-    <thead class="bg-gray-300">
-      <tr>
-        <th class="p-2 text-sm text-center">Ticket</th>
-        <th class="p-2 text-sm text-center">Título</th>
-        <th class="p-2 text-sm text-center">Categoría</th>
-        <th class="p-2 text-sm text-center">Estado</th>
-        <th class="p-2 text-sm text-center">Prioridad</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for ticket in tickets %}
-      <tr class="border-t hover:bg-gray-50 cursor-pointer" onclick="window.location='{% url 'detalle_ticket' ticket.id %}'">
-        <td class="p-2 text-sm text-center">{{ ticket.id }}</td>
-        <td class="p-2 text-sm text-center">{{ ticket.titulo }}</td>
-        <td class="p-2 text-sm text-center">{{ ticket.categoria }}</td>
-        <td class="p-2 text-sm text-center">{{ ticket.get_estado_display }}</td>
-        <td class="p-2 text-sm text-center">{{ ticket.prioridad|default:"Sin asignar" }}</td>
-      </tr>
-      {% empty %}
-      <tr>
-        <td colspan="5" class="p-4 text-center text-gray-500 text-sm">No hay tickets para mostrar.</td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
+      type="text"
+
+      name="q"
+
+      value="{{ busqueda_actual|default:'' }}"
+
+      placeholder="Buscar por título, asunto o creador..."
+
+      class="flex-1 border border-gray-300 rounded px-3 py-2 text-sm"
+>
+<button type="submit" class="bg-red-600 text-white px-4 py-2 rounded text-sm hover:bg-red-700">
+<i class="fa-solid fa-magnifying-glass"></i>
+</button>
+<button type="button" onclick="document.getElementById('panel-filtros').classList.toggle('hidden')"
+
+      class="bg-gray-200 text-gray-700 px-4 py-2 rounded text-sm hover:bg-gray-300">
+<i class="fa-solid fa-sliders"></i> Filtros
+</button>
+</form>
+ 
+  <!-- Panel lateral de filtros -->
+<div id="panel-filtros" class="hidden fixed top-0 right-0 h-full w-72 bg-white shadow-lg z-50 p-6 overflow-y-auto">
+<div class="flex justify-between items-center mb-4">
+<h2 class="font-semibold text-gray-800">Filtros</h2>
+<button onclick="document.getElementById('panel-filtros').classList.add('hidden')" class="text-gray-500 hover:text-red-600">
+<i class="fa-solid fa-xmark text-xl"></i>
+</button>
 </div>
+ 
+    <form method="get">
+
+      {% if busqueda_actual %}
+<input type="hidden" name="q" value="{{ busqueda_actual }}">
+
+      {% endif %}
+ 
+      <!-- Prioridad -->
+<div class="mb-4">
+<label class="block text-sm font-medium text-gray-700 mb-1">Prioridad</label>
+<select name="prioridad" class="w-full border border-gray-300 rounded px-3 py-2 text-sm">
+<option value="">Todas</option>
+<option value="baja" {% if prioridad_actual == 'baja' %}selected{% endif %}>Baja</option>
+<option value="media" {% if prioridad_actual == 'media' %}selected{% endif %}>Media</option>
+<option value="alta" {% if prioridad_actual == 'alta' %}selected{% endif %}>Alta</option>
+</select>
+</div>
+ 
+      <!-- Estado -->
+<div class="mb-4">
+<label class="block text-sm font-medium text-gray-700 mb-1">Estado</label>
+<select name="estado" class="w-full border border-gray-300 rounded px-3 py-2 text-sm">
+<option value="">Todos</option>
+<option value="nuevo" {% if estado_actual == 'nuevo' %}selected{% endif %}>Nuevo</option>
+<option value="en_revision" {% if estado_actual == 'en_revision' %}selected{% endif %}>En revisión</option>
+<option value="en_progreso" {% if estado_actual == 'en_progreso' %}selected{% endif %}>En progreso</option>
+<option value="desestimado" {% if estado_actual == 'desestimado' %}selected{% endif %}>Desestimado</option>
+<option value="cerrado" {% if estado_actual == 'cerrado' %}selected{% endif %}>Cerrado</option>
+</select>
+</div>
+ 
+      <!-- Duración -->
+<div class="mb-4">
+<label class="block text-sm font-medium text-gray-700 mb-1">Período</label>
+<select name="duracion" class="w-full border border-gray-300 rounded px-3 py-2 text-sm">
+<option value="">Todos</option>
+<option value="hoy" {% if duracion_actual == 'hoy' %}selected{% endif %}>Hoy</option>
+<option value="semana" {% if duracion_actual == 'semana' %}selected{% endif %}>Esta semana</option>
+<option value="mes" {% if duracion_actual == 'mes' %}selected{% endif %}>Este mes</option>
+</select>
+</div>
+ 
+      <!-- Orden -->
+<div class="mb-4">
+<label class="block text-sm font-medium text-gray-700 mb-1">Ordenar por</label>
+<select name="orden" class="w-full border border-gray-300 rounded px-3 py-2 text-sm">
+<option value="reciente" {% if orden_actual == 'reciente' %}selected{% endif %}>Más reciente</option>
+<option value="antiguo" {% if orden_actual == 'antiguo' %}selected{% endif %}>Más antiguo</option>
+<option value="az" {% if orden_actual == 'az' %}selected{% endif %}>A-Z</option>
+<option value="za" {% if orden_actual == 'za' %}selected{% endif %}>Z-A</option>
+</select>
+</div>
+ 
+      <!-- Filtros solo para administrador -->
+
+      {% if user.rol == 'administrador' %}
+ 
+      <!-- Categoría -->
+<div class="mb-4">
+<label class="block text-sm font-medium text-gray-700 mb-1">Categoría</label>
+<select name="categoria" class="w-full border border-gray-300 rounded px-3 py-2 text-sm">
+<option value="">Todas</option>
+
+          {% for cat in categorias %}
+<option value="{{ cat.id }}" {% if categoria_actual == cat.id|stringformat:"s" %}selected{% endif %}>{{ cat.nombre }}</option>
+
+          {% endfor %}
+</select>
+</div>
+ 
+      <!-- Técnico -->
+<div class="mb-4">
+<label class="block text-sm font-medium text-gray-700 mb-1">Técnico</label>
+<select name="tecnico" class="w-full border border-gray-300 rounded px-3 py-2 text-sm">
+<option value="">Todos</option>
+
+          {% for tec in tecnicos %}
+<option value="{{ tec.id }}" {% if tecnico_actual == tec.id|stringformat:"s" %}selected{% endif %}>{{ tec.get_full_name }}</option>
+
+          {% endfor %}
+</select>
+</div>
+ 
+      {% endif %}
+ 
+      <button type="submit" class="w-full bg-red-600 text-white py-2 rounded text-sm hover:bg-red-700">
+
+        Aplicar filtros
+</button>
+<a href="{% url 'lista_tickets' %}" class="block text-center text-sm text-gray-500 mt-2 hover:text-red-600">
+
+        Limpiar filtros
+</a>
+</form>
+</div>
+ 
+  <!-- Tabla de tickets -->
+<table class="w-full bg-white rounded">
+<thead class="bg-gray-300">
+<tr>
+<th class="p-2 text-sm">Ticket</th>
+<th class="p-2 text-sm">Título</th>
+<th class="p-2 text-sm">Categoría</th>
+<th class="p-2 text-sm">Estado</th>
+<th class="p-2 text-sm">Prioridad</th>
+</tr>
+</thead>
+<tbody>
+
+      {% for ticket in tickets %}
+<tr class="border-t hover:bg-gray-50 cursor-pointer" data-url="{% url 'detalle_ticket' ticket.id %}">
+<td class="p-2 text-sm">{{ ticket.id }}</td>
+<td class="p-2 text-sm">{{ ticket.titulo }}</td>
+<td class="p-2 text-sm">{{ ticket.categoria }}</td>
+<td class="p-2 text-sm">{{ ticket.get_estado_display }}</td>
+<td class="p-2 text-sm">{{ ticket.prioridad|default:"Sin asignar" }}</td>
+</tr>
+
+      {% empty %}
+<tr>
+<td colspan="5" class="p-4 text-center text-gray-500 text-sm">No hay tickets para mostrar.</td>
+</tr>
+
+      {% endfor %}
+</tbody>
+</table>
+ 
+</div>
+ 
+<script>
+
+  document.querySelectorAll('tr[data-url]').forEach(row => {
+
+    row.addEventListener('click', () => {
+
+      window.location = row.dataset.url;
+
+    });
+
+  });
+</script>
+ 
 {% endblock %}
+ 

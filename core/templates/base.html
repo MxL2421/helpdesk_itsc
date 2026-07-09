@@ -6,6 +6,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{% block title %}Mi Sistema de Tickets{% endblock %}</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 </head>
 <body class="bg-white">
 
@@ -74,8 +77,36 @@
     <img src="{% static 'img/cerrar-sesion.png' %}" alt="Cerrar sesión" class="h-10 w-auto">
   </button>
 </form>
-            
+<!--boto para mis tickets del admi-->
+  <!--notificaion en forma de mensaje-->
+      {% if user.rol == 'administrador' %}
+      <li>
+<a href="{% url 'admin_notificaciones' %}" class="flex flex-col items-center text-gray-700 hover:text-red-600">
+<i class="fa-solid fa-envelope-open-text text-2xl"></i>
+<span class="text-sm">Notificaciones</span>
+</a>
+</li>
+{% endif %}
 
+<!--gestion de categoria-->
+{% if user.rol == 'administrador' %}
+<li>
+<a href="{% url 'admin_categorias' %}" class="flex flex-col items-center text-gray-700 hover:text-red-600">
+<i class="fa-solid fa-tags text-2xl"></i>
+<span class="text-sm">Categorías</span>
+</a>
+</li>
+{% endif %}
+
+            <!--gestion de usuarios para admi-->
+     {% if user.rol == 'administrador' %}
+<li>
+    <a href="{% url 'admin_usuarios' %}" class="flex flex-col items-center text-gray-700 hover:text-red-600">
+        <i class="fa-solid fa-users text-2xl"></i>
+          <span class="text-sm">Usuarios</span>
+           </a>
+    </li>
+         {% endif %}
            
             
        {% if user.rol == 'administrador' %}
@@ -108,6 +139,7 @@
            </li>
       </ul>
     </nav>
+
 
     <!-- AQUÍ es el "hueco" donde cada página mete SU contenido -->
     <main class="flex-1 p-6">

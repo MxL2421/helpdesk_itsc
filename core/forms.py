@@ -1,5 +1,5 @@
 from django import forms
-from .models import Ticket, Usuario, Adjunto, Comentario
+from .models import Ticket, Usuario, Adjunto, Comentario, Categoria
 from django.contrib.auth.forms import AuthenticationForm
 from django import forms
 from django.forms import inlineformset_factory
@@ -11,10 +11,10 @@ from django.contrib.auth.forms import PasswordChangeForm
 
 class TicketForm(forms.ModelForm):
     maestros = forms.ModelMultipleChoiceField(
-        queryset=Usuario.objects.filter(rol='maestro', activo=True),
-        required=False,
-        label='Etiquetar maestros (opcional)',
-        widget=forms.CheckboxSelectMultiple
+    queryset=Usuario.objects.filter(rol='maestro', is_active=True),
+    required=False,
+    label='Etiquetar maestros (opcional)',
+    widget=forms.SelectMultiple(attrs={'style': 'width: 100%'})
     )
 
     class Meta:
@@ -24,10 +24,10 @@ class TicketForm(forms.ModelForm):
 
 class EtiquetarMaestroForm(forms.Form):
     maestros = forms.ModelMultipleChoiceField(
-        queryset=Usuario.objects.filter(rol='maestro', activo=True),
+        queryset=Usuario.objects.filter(rol='maestro', is_active=True),
         required=False,
         label='Etiquetar maestros',
-        widget=forms.CheckboxSelectMultiple
+        widget=forms.SelectMultiple(attrs={'style': 'width: 100%'})
     )
 
 class AdjuntoForm(forms.ModelForm):
@@ -67,7 +67,7 @@ class ReasignarTicketForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields['tecnico'].queryset = Usuario.objects.filter(rol='tecnico', activo=True)
+        self.fields['tecnico'].queryset = Usuario.objects.filter(rol='tecnico', is_active=True)
 
 # Redirección de ticket (cambio de categoría)
 
@@ -110,3 +110,127 @@ class CambiarContrasenaForm(PasswordChangeForm):
     
 class LoginForm(AuthenticationForm):
     username = forms.EmailField(label='Correo institucional')
+
+
+# Panel administrativo
+
+class CrearUsuarioForm(forms.ModelForm):
+    password1 = forms.CharField(
+        label='Contraseña',
+        widget=forms.PasswordInput()
+    )
+    password2 = forms.CharField(
+        label='Confirmar contraseña',
+        widget=forms.PasswordInput()
+    )
+
+    class Meta:
+        model = Usuario
+        fields = ['nombre', 'apellido', 'correo', 'rol', 'matricula', 'carrera', 'areas']
+        labels = {
+            'nombre': 'Nombre',
+            'apellido': 'Apellido',
+            'correo': 'Correo institucional',
+            'rol': 'Rol',
+            'matricula': 'Matrícula',
+            'carrera': 'Carrera',
+            'areas': 'Áreas asignadas',
+        }
+
+    def clean_password2(self):
+        password1 = self.cleaned_data.get('password1')
+        password2 = self.cleaned_data.get('password2')
+        if password1 and password2 and password1 != password2:
+            raise forms.ValidationError('Las contraseñas no coinciden.')
+        return password2
+
+    def clean_correo(self):
+        correo = self.cleaned_data.get('correo')
+        rol = self.cleaned_data.get('rol')
+        dominios = {
+            'administrador': '@adm.itsc.edu.do',
+            'tecnico': '@tec.itsc.edu.do',
+            'estudiante': '@est.itsc.edu.do',
+            'maestro': '@doc.itsc.edu.do',
+        }
+        if rol and correo:
+            dominio_esperado = dominios.get(rol)
+            if dominio_esperado and not correo.endswith(dominio_esperado):
+                raise forms.ValidationError(f'El correo debe terminar en {dominio_esperado}')
+        return correo
+
+    def save(self, commit=True):
+        user = super().save(commit=False)
+        user.set_password(self.cleaned_data['password1'])
+        if commit:
+            user.save()
+            self.save_m2m()
+        return user
+
+
+class EditarUsuarioForm(forms.ModelForm):
+    class Meta:
+        model = Usuario
+        fields = ['nombre', 'apellido', 'correo', 'rol', 'matricula', 'carrera', 'areas', 'is_active']
+        labels = {
+            'nombre': 'Nombre',
+            'apellido': 'Apellido',
+            'correo': 'Correo institucional',
+            'rol': 'Rol',
+            'matricula': 'Matrícula',
+            'carrera': 'Carrera',
+            'areas': 'Áreas asignadas',
+            'is_active': 'Usuario activo',
+        }
+
+
+class ConfirmarPasswordForm(forms.Form):
+    password = forms.CharField(
+        label='Confirma tu contraseña para continuar',
+        widget=forms.PasswordInput()
+    )
+
+    def __init__(self, user, *args, **kwargs):
+        self.user = user
+        super().__init__(*args, **kwargs)
+
+    def clean_password(self):
+        password = self.cleaned_data.get('password')
+        if not self.user.check_password(password):
+            raise forms.ValidationError('Contraseña incorrecta.')
+        return password
+    
+class CategoriaForm(forms.ModelForm):
+    class Meta:
+        model = Categoria
+        fields = ['nombre']
+        labels = {
+            'nombre': 'Nombre de la categoría',
+        }
+
+class EliminarCategoriaForm(forms.Form):
+    categoria_destino = forms.ModelChoiceField(
+        queryset=Categoria.objects.none(),
+        label='Mover tickets a categoría',
+        required=False,
+        empty_label='Selecciona una categoría destino'
+    )
+    password = forms.CharField(
+        label='Confirma tu contraseña',
+        widget=forms.PasswordInput()
+    )
+
+    def __init__(self, user, categoria_actual, *args, **kwargs):
+        self.user = user
+        super().__init__(*args, **kwargs)
+        self.fields['categoria_destino'].queryset = Categoria.objects.exclude(id=categoria_actual.id)
+
+    def clean_password(self):
+        password = self.cleaned_data.get('password')
+        if not self.user.check_password(password):
+            raise forms.ValidationError('Contraseña incorrecta.')
+        return password
+
+    def clean(self):
+        cleaned_data = super().clean()
+        return cleaned_data

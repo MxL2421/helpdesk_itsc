@@ -1,3 +1,7 @@
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
 <h1>Etiquetar Maestro: {{ ticket.titulo }}</h1>
 <form method="post">
     {% csrf_token %}
@@ -5,3 +9,16 @@
     <button type="submit">Etiquetar</button>
     <a href="{% url 'detalle_ticket' ticket.id %}">Cancelar</a>
 </form>
+<script>
+  $(document).ready(function() {
+    $('select[name="maestros"]').select2({
+      placeholder: 'Buscar maestro...',
+      allowClear: true,
+      width: '100%',
+      language: {
+        noResults: function() { return "No se encontraron maestros"; },
+        searching: function() { return "Buscando..."; }
+      }
+    });
+  });
+</script>
