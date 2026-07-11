@@ -27,16 +27,18 @@
     </div>
 
     <ul class="flex items-center ml-auto gap-4">
-      <li><!--boton para visualizar las notificaciones-->
-        <a href="{% url 'notificaciones' %}" class="relative text-gray-700 hover:text-red-600">
-          <img src="{% static 'img/notificacion.png' %}" alt="Notificaciones" class="h-6 w-auto">
-          {% if notificaciones_no_leidas > 0 %}
-            <span class="absolute -top-1 -right-1 bg-red-600 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">
-              {{ notificaciones_no_leidas }}
-            </span>
-          {% endif %}
-        </a>
-      </li>
+      <li>
+  {% if user.rol != 'administrador' %}
+  <a href="{% url 'notificaciones' %}" class="relative text-gray-700 hover:text-red-600">
+    <img src="{% static 'img/notificacion.png' %}" alt="Notificaciones" class="h-6 w-auto">
+    {% if notificaciones_no_leidas > 0 %}
+      <span class="absolute -top-1 -right-1 bg-red-600 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">
+        {{ notificaciones_no_leidas }}
+      </span>
+    {% endif %}
+  </a>
+  {% endif %}
+</li>
 
       <li><!--boton para visualizar el perfil del usuario-->
         <a href="{% url 'perfil' %}" class="text-gray-700 hover:text-red-600">
@@ -73,16 +75,21 @@
     </li>
 
     <li>
-      <a href="{% url 'lista_tickets' %}" class="flex flex-col items-center text-gray-700 hover:text-red-600">
-        <img src="{% static 'img/historiar.png' %}" alt="Logo" class="h-10 w-auto">
-        <span class="text-sm">Mis tickets</span>
-      </a>
-    </li>
+  <a href="{% url 'lista_tickets' %}" class="flex flex-col items-center text-gray-700 hover:text-red-600">
+    <img src="{% static 'img/historiar.png' %}" alt="Logo" class="h-10 w-auto">
+    <span class="text-sm">
+      {% if user.rol == 'administrador' %}Tickets
+      {% elif user.rol == 'tecnico' %}Mis asignaciones
+      {% else %}Mis tickets{% endif %}
+    </span>
+  </a>
+</li>
 
     {% if user.rol == 'administrador' %}
     <li>
       <a href="{% url 'admin_notificaciones' %}" class="flex flex-col items-center text-gray-700 hover:text-red-600">
         <i class="fa-solid fa-envelope-open-text text-2xl"></i>
+          <img src="{% static 'img/notificacion-admin.png' %}" alt="Logo" class="h-10 w-auto">
         <span class="text-sm">Notificaciones</span>
       </a>
     </li>
@@ -112,17 +119,20 @@
 
   </ul>
 
-  <form method="post" action="{% url 'logout' %}" class="flex flex-col items-center text-gray-700 hover:text-red-600">
-    {% csrf_token %}
-    <button type="submit" class="p-2 rounded hover:bg-red-50 transition" title="Cerrar sesión">
-      <img src="{% static 'img/cerrar-sesion.png' %}" alt="Cerrar sesión" class="h-10 w-auto">
-    </button>
-  </form>
+ <form method="post" action="{% url 'logout' %}">
+  {% csrf_token %}
+  <button type="submit"
+    class="flex flex-col items-center text-gray-700 hover:text-red-600 p-2 rounded hover:bg-red-50 transition w-full"
+    title="Cerrar sesión">
+    <img src="{% static 'img/cerrar-sesion.png' %}" alt="Cerrar sesión" class="h-10 w-auto">
+    <span class="text-sm">Cerrar sesión</span>
+  </button>
+</form>
 </nav>
 
 
     <!-- AQUÍ es el "hueco" donde cada página mete SU contenido -->
-    <main class="flex-1 p-6 bg-cover bg-center bg-no-repeat"style="background-image: url('{% static 'img/fondo-rojo.png' %}');">
+    <main class="flex-1 p-6 bg-cover bg-center bg-no-repeat"style="background-image: url('{% static 'img/itsc2.png' %}');">
       {% block content %}
       {% endblock %}
     </main>

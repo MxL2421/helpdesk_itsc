@@ -69,7 +69,40 @@
     <p class="text-sm text-gray-400">Sin archivos adjuntos.</p>
   {% endfor %}
 
+  {% if ticket.adjuntos.count < 5 %}
+  <form method="post" action="{% url 'agregar_adjunto' ticket.id %}" enctype="multipart/form-data" class="mt-4">
+    {% csrf_token %}
+    <input type="file" name="archivo" id="archivo-adjunto"
+      accept=".jpg,.jpeg,.png,.gif,.webp,.pdf,.doc,.docx"
+      class="hidden">
+    <div class="flex items-center gap-2">
+      <button type="button" onclick="document.getElementById('archivo-adjunto').click()"
+        class="text-sm font-medium px-4 py-2 rounded-md border border-gray-300 text-gray-700 hover:border-red-600 hover:text-red-600 bg-white">
+        + Seleccionar archivo
+      </button>
+      <span id="nombre-archivo" class="text-sm text-gray-500">Ningún archivo seleccionado</span>
+      <button type="submit" id="btn-adjuntar" onclick="this.disabled=true; this.form.submit();"
+        class="hidden text-sm font-medium px-4 py-2 rounded-md bg-red-600 text-white hover:bg-red-700">
+        Adjuntar
+      </button>
+    </div>
+    <p class="text-xs text-gray-400 mt-1">
+      {{ ticket.adjuntos.count }}/5 archivos. Solo imágenes, PDF y Word.
+    </p>
+  </form>
+  {% else %}
+    <p class="text-xs text-gray-400 mt-3">Límite de 5 archivos alcanzado.</p>
+  {% endif %}
 </div>
+
+<script>
+  document.getElementById('archivo-adjunto').addEventListener('change', function() {
+    if (this.files.length > 0) {
+      document.getElementById('nombre-archivo').textContent = this.files[0].name;
+      document.getElementById('btn-adjuntar').classList.remove('hidden');
+    }
+  });
+</script>
 
 <div class="border border-gray-300 rounded-lg p-6 bg-white mt-6"><!--etiquetar maestro-->
   <h2 class="text-sm font-semibold text-gray-900 mb-3">Maestros etiquetados</h2>
