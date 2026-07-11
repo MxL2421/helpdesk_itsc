@@ -209,7 +209,14 @@ def crear_ticket(request):
         formset = AdjuntoFormSet(request.POST, request.FILES)
         if form.is_valid():
             ticket = form.save(commit=False)
-            ticket.creador = request.user
+
+            # Si el técnico crea a nombre de otro usuario
+            crear_a_nombre_de = form.cleaned_data.get('crear_a_nombre_de')
+            if request.user.rol == 'tecnico' and crear_a_nombre_de:
+                ticket.creador = crear_a_nombre_de
+            else:
+                ticket.creador = request.user
+
             ticket.save()
 
             formset = AdjuntoFormSet(request.POST, request.FILES, instance=ticket)
@@ -222,6 +229,25 @@ def crear_ticket(request):
                         adjunto.tipo_mime = adjunto.ruta.file.content_type if hasattr(adjunto.ruta.file, 'content_type') else 'desconocido'
                         adjunto.save()
 
+            # Si el técnico se autoasigna
+            autoasignar = form.cleaned_data.get('autoasignar')
+            prioridad_inicial = form.cleaned_data.get('prioridad_inicial')
+
+            if request.user.rol == 'tecnico' and autoasignar and prioridad_inicial:
+                ticket.tecnico = request.user
+                ticket.prioridad = prioridad_inicial
+                ticket.fecha_limite = calcular_fecha_limite(ticket)
+                ticket.save()
+
+                HistorialTicket.objects.create(
+                    campo='prioridad',
+                    valor_anterior=None,
+                    valor_nuevo=prioridad_inicial,
+                    ticket=ticket,
+                    usuario=request.user
+                )
+
+            # Maestros etiquetados
             maestros = form.cleaned_data.get('maestros')
             if maestros:
                 for maestro in maestros:
@@ -275,7 +301,9 @@ def lista_tickets(request):
 
     # Filtros comunes (técnico y admin)
     prioridad = request.GET.get('prioridad')
-    if prioridad in ['baja', 'media', 'alta']:
+    if prioridad == 'sin_asignar':
+        tickets = tickets.filter(prioridad__isnull=True)
+    elif prioridad in ['baja', 'media', 'alta']:
         tickets = tickets.filter(prioridad=prioridad)
 
     estado = request.GET.get('estado')
@@ -389,14 +417,29 @@ def autoasignar_ticket(request, ticket_id):
         messages.error(request, 'No puedes autoasignarte un ticket fuera de tu área.')
         return redirect('detalle_ticket', ticket_id=ticket.id)
 
+    prioridad = request.POST.get('prioridad')
+    if prioridad not in ['baja', 'media', 'alta']:
+        messages.error(request, 'Debes seleccionar una prioridad al autoasignarte el ticket.')
+        return redirect('detalle_ticket', ticket_id=ticket.id)
+
     ticket.tecnico = request.user
+    ticket.prioridad = prioridad
+    ticket.fecha_limite = calcular_fecha_limite(ticket)
     ticket.save()
+
+    HistorialTicket.objects.create(
+        campo='prioridad',
+        valor_anterior=None,
+        valor_nuevo=prioridad,
+        ticket=ticket,
+        usuario=request.user
+    )
 
     enviar_notificacion(
         ticket=ticket,
         destinatario_correo=ticket.tecnico.correo,
         asunto=f'Te has autoasignado el ticket #{ticket.id}',
-        mensaje=f'Hola {ticket.tecnico.nombre},\n\nTe has autoasignado el ticket "{ticket.titulo}".\n\nCategoría: {ticket.categoria}\nPrioridad: {ticket.prioridad or "Sin asignar"}',
+        mensaje=f'Hola {ticket.tecnico.nombre},\n\nTe has autoasignado el ticket "{ticket.titulo}".\n\nCategoría: {ticket.categoria}\nPrioridad: {ticket.get_prioridad_display()}',
         destinatario_usuario=ticket.tecnico
     )
 
