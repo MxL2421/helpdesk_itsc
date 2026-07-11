@@ -1,5 +1,5 @@
 {% extends 'base.html' %}
-
+{% load static %}
 {% block title %}Mis Reportes{% endblock %}
  
 {% block content %}
@@ -20,8 +20,8 @@
 
       class="flex-1 border border-gray-300 rounded px-3 py-2 text-sm"
 >
-<button type="submit" class="bg-red-600 text-white px-4 py-2 rounded text-sm hover:bg-red-700">
-<i class="fa-solid fa-magnifying-glass"></i>
+<button type="submit" class="bg-red-600 text-white  rounded text-sm hover:bg-red-700">
+ <img src="{% static 'img/buscar.png' %}" alt="Buscar" class="h-8 w-12 object-contain">
 </button>
 <button type="button" onclick="document.getElementById('panel-filtros').classList.toggle('hidden')"
 
@@ -51,9 +51,11 @@
 <label class="block text-sm font-medium text-gray-700 mb-1">Prioridad</label>
 <select name="prioridad" class="w-full border border-gray-300 rounded px-3 py-2 text-sm">
 <option value="">Todas</option>
+<option value="sin_asignar" {% if prioridad_actual == 'sin_asignar' %}selected{% endif %}>Sin asignar</option>
 <option value="baja" {% if prioridad_actual == 'baja' %}selected{% endif %}>Baja</option>
 <option value="media" {% if prioridad_actual == 'media' %}selected{% endif %}>Media</option>
 <option value="alta" {% if prioridad_actual == 'alta' %}selected{% endif %}>Alta</option>
+
 </select>
 </div>
  
@@ -136,31 +138,38 @@
 </div>
  
   <!-- Tabla de tickets -->
-<table class="w-full bg-white rounded">
+<table class="w-full bg-white rounded"> 
 <thead class="bg-gray-300">
+
 <tr>
-<th class="p-2 text-sm">Ticket</th>
-<th class="p-2 text-sm">Título</th>
-<th class="p-2 text-sm">Categoría</th>
-<th class="p-2 text-sm">Estado</th>
-<th class="p-2 text-sm">Prioridad</th>
+<th class="p-2 text-sm text-left">Ticket</th>
+<th class="p-2 text-sm text-left">Título</th>
+<th class="p-2 text-sm text-left">Categoría</th>
+<th class="p-2 text-sm text-left">Estado</th>
+<th class="p-2 text-sm text-left">Prioridad</th>
+    {% if user.rol == 'tecnico' or user.rol == 'administrador' %}
+<th class="p-2 text-sm text-left">Creador</th>
+    {% endif %}
 </tr>
 </thead>
 <tbody>
-
-      {% for ticket in tickets %}
+  {% for ticket in tickets %}
 <tr class="border-t hover:bg-gray-50 cursor-pointer" data-url="{% url 'detalle_ticket' ticket.id %}">
-<td class="p-2 text-sm">{{ ticket.id }}</td>
-<td class="p-2 text-sm">{{ ticket.titulo }}</td>
-<td class="p-2 text-sm">{{ ticket.categoria }}</td>
+<td class="p-2 text-sm text-left">{{ ticket.id }}</td>
+<td class="p-2 text-sm text-left">{{ ticket.titulo }}</td>
+<td class="p-2 text-sm text-left">{{ ticket.categoria }}</td>
 <td class="p-2 text-sm">{{ ticket.get_estado_display }}</td>
 <td class="p-2 text-sm">{{ ticket.prioridad|default:"Sin asignar" }}</td>
+    {% if user.rol == 'tecnico' or user.rol == 'administrador' %}
+<td class="p-2 text-sm">{{ ticket.creador.get_full_name }}</td>
+    {% endif %}
+</tr>
+  {% empty %}
+<tr>
+<td colspan="{% if user.rol == 'tecnico' or user.rol == 'administrador' %}6{% else %}5{% endif %}" 
+        class="p-4 text-center text-gray-500 text-sm">No hay tickets para mostrar.</td>
 </tr>
 
-      {% empty %}
-<tr>
-<td colspan="5" class="p-4 text-center text-gray-500 text-sm">No hay tickets para mostrar.</td>
-</tr>
 
       {% endfor %}
 </tbody>

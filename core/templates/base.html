@@ -14,7 +14,7 @@
 
 <header class="relative border border-gray-300 overflow-hidden h-20">
 
-  <img src="{% static 'img/banner.png' %}" alt="" class="absolute inset-0 w-full h-full object-cover -z-10">
+  <img src="{% static 'img/banner2.png' %}" alt="" class="absolute inset-0 w-full h-full object-cover -z-10">
   <div class="flex items-center h-20 px-6 gap-4">
 
     <img src="{% static 'img/logo.png' %}" alt="Logo" class="h-16 w-auto">
@@ -51,103 +51,88 @@
   <div class="flex">
 
     <!-- NAV: el menú, igual para todas las páginas de usuario -->
-    <nav class="bg-gray-50 border border-gray-300 w-48 h-screen shrink-0">
-      <ul class="p-4 space-y-8">
-        
-        <li>
-          <a href="{% url 'crear_ticket' %}" class="flex flex-col items-center text-gray-700 hover:text-red-600">
-            <img src="{% static 'img/crear.png' %}" alt="Logo" class="h-10 w-auto">
-            <span class="text-sm">Crear nuevo ticket</span>
-          </a>
-        </li>
-        <li>
-          <a href="{% url 'lista_tickets' %}" class="flex flex-col items-center text-gray-700 hover:text-red-600">
-            <img src="{% static 'img/historiar.png' %}" alt="Logo" class="h-10 w-auto">
-            <span class="text-sm">Mis tickets</span>
-          </a>
-        </li>
-
-      <li>
-<!-- boto de cerrar sesesion-->
-  <form method="post" action="{% url 'logout' %}" class="flex flex-col items-center text-gray-700 hover:text-red-600">
-       {% csrf_token %}
-      <button type="submit"
-          class="p-2 rounded hover:bg-red-50 transition"
-          title="Cerrar sesión">
-    <img src="{% static 'img/cerrar-sesion.png' %}" alt="Cerrar sesión" class="h-10 w-auto">
-  </button>
-</form>
-<!--boto para mis tickets del admi-->
-  <!--notificaion en forma de mensaje-->
-      {% if user.rol == 'administrador' %}
-      <li>
-<a href="{% url 'admin_notificaciones' %}" class="flex flex-col items-center text-gray-700 hover:text-red-600">
-<i class="fa-solid fa-envelope-open-text text-2xl"></i>
-<span class="text-sm">Notificaciones</span>
-</a>
-</li>
-{% endif %}
-
-<!--gestion de categoria-->
-{% if user.rol == 'administrador' %}
-<li>
-<a href="{% url 'admin_categorias' %}" class="flex flex-col items-center text-gray-700 hover:text-red-600">
-<i class="fa-solid fa-tags text-2xl"></i>
-<span class="text-sm">Categorías</span>
-</a>
-</li>
-{% endif %}
-
-            <!--gestion de usuarios para admi-->
-     {% if user.rol == 'administrador' %}
-<li>
-    <a href="{% url 'admin_usuarios' %}" class="flex flex-col items-center text-gray-700 hover:text-red-600">
-        <i class="fa-solid fa-users text-2xl"></i>
-          <span class="text-sm">Usuarios</span>
-           </a>
-    </li>
-         {% endif %}
-           
-            
-       {% if user.rol == 'administrador' %}
-       <a href="{% url 'dashboard' %}">Dashboard</a>
-           {% elif user.rol == 'tecnico' %}
-        <a href="{% url 'dashboard' %}">Mis asignaciones</a>
-           {% endif %}
-           
-            {% if user.rol == 'administrador' or user.rol == 'tecnico' %}
-    <li>
-            <a href="{% url 'dashboard' %}" class="flex flex-col items-center text-gray-700 hover:text-red-600">
-            <i class="fa-solid fa-chart-line text-2xl"></i>
-              <span class="text-sm">Dashboard</span>
-              </a>
-           </li>
-            {% endif %}
-    </li>
-      <li>
-            {% if user.rol == 'administrador' or user.rol == 'tecnico' %}
-            
+  <nav class="bg-gray-100 border border-gray-300 w-48 h-screen shrink-0">
+     <ul class="p-4 space-y-8">
+       {% if user.rol == 'administrador' or user.rol == 'tecnico' %}
     <li>
       <a href="{% url 'dashboard' %}" class="flex flex-col items-center text-gray-700 hover:text-red-600">
+          <img src="{% static 'img/grafico-de-barras.png' %}" alt="Logo" class="h-10 w-auto">
         <i class="fa-solid fa-chart-line text-2xl"></i>
-           <span class="text-sm">
-             {% if user.rol == 'tecnico' %}Mis asignaciones{% else %}Dashboard{% endif %}
-            </span>
+        <span class="text-sm">
+          {% if user.rol == 'tecnico' %}Dashboard{% else %}Dashboard{% endif %}
+        </span>
       </a>
-  </li>
-{% endif %}
-           </li>
-      </ul>
-    </nav>
+    </li>
+    {% endif %}
+
+    <li>
+      <a href="{% url 'crear_ticket' %}" class="flex flex-col items-center text-gray-700 hover:text-red-600">
+        <img src="{% static 'img/crear.png' %}" alt="Logo" class="h-10 w-auto">
+        <span class="text-sm">Crear nuevo ticket</span>
+      </a>
+    </li>
+
+    <li>
+      <a href="{% url 'lista_tickets' %}" class="flex flex-col items-center text-gray-700 hover:text-red-600">
+        <img src="{% static 'img/historiar.png' %}" alt="Logo" class="h-10 w-auto">
+        <span class="text-sm">Mis tickets</span>
+      </a>
+    </li>
+
+    {% if user.rol == 'administrador' %}
+    <li>
+      <a href="{% url 'admin_notificaciones' %}" class="flex flex-col items-center text-gray-700 hover:text-red-600">
+        <i class="fa-solid fa-envelope-open-text text-2xl"></i>
+        <span class="text-sm">Notificaciones</span>
+      </a>
+    </li>
+    {% endif %}
+
+    {% if user.rol == 'administrador' %}
+    <li>
+      <a href="{% url 'admin_categorias' %}" class="flex flex-col items-center text-gray-700 hover:text-red-600">
+        <img src="{% static 'img/categoria-removebg.png' %}" alt="Logo" class="h-10 w-auto">
+        <i class="fa-solid fa-tags text-2xl"></i>
+        <span class="text-sm">Categorías</span>
+      </a>
+    </li>
+    {% endif %}
+
+    {% if user.rol == 'administrador' %}
+    <li>
+      <a href="{% url 'admin_usuarios' %}" class="flex flex-col items-center text-gray-700 hover:text-red-600">
+        <img src="{% static 'img/agregar-usuario.png' %}" alt="Logo" class="h-10 w-auto">
+        <i class="fa-solid fa-users text-2xl"></i>
+        <span class="text-sm">Usuarios</span>
+      </a>
+    </li>
+    {% endif %}
+
+  
+
+  </ul>
+
+  <form method="post" action="{% url 'logout' %}" class="flex flex-col items-center text-gray-700 hover:text-red-600">
+    {% csrf_token %}
+    <button type="submit" class="p-2 rounded hover:bg-red-50 transition" title="Cerrar sesión">
+      <img src="{% static 'img/cerrar-sesion.png' %}" alt="Cerrar sesión" class="h-10 w-auto">
+    </button>
+  </form>
+</nav>
 
 
     <!-- AQUÍ es el "hueco" donde cada página mete SU contenido -->
-    <main class="flex-1 p-6">
+    <main class="flex-1 p-6 bg-cover bg-center bg-no-repeat"style="background-image: url('{% static 'img/fondo-rojo.png' %}');">
       {% block content %}
       {% endblock %}
     </main>
 
   </div>
+  <footer class="border border-gray-300 bg-red-600 py-3 px-6">
+     <p class="text-center text-xs text-white">
+    © {% now "Y" %} <span class="font-medium">Help Desk ITSC</span> — Instituto Técnico Superior Comunitario. Todos los derechos reservados.
+  </p>
+  </footer>
    
 </body>
 </html>

@@ -1,10 +1,26 @@
-<h1>Redirigir Ticket: {{ ticket.titulo }}</h1>
+{% extends 'base.html' %}
+{% block title %}{% if ticket.tecnico %}Reasignar{% else %}Asignar{% endif %} Técnico{% endblock %}
 
-<p><strong>Categoría actual:</strong> {{ ticket.categoria }}</p>
+{% block content %}
+<div class="border border-gray-300 rounded-lg p-4 bg-gray-100 flex-1 m-8">
+  <h1 class="text-center text-red-600 font-semibold mb-6">
+    {% if ticket.tecnico %}Reasignar{% else %}Asignar{% endif %} Técnico: {{ ticket.titulo }}
+  </h1>
 
-<form method="post">
-    {% csrf_token %}
-    {{ form.as_p }}
-    <button type="submit">Redirigir</button>
-    <a href="{% url 'detalle_ticket' ticket.id %}">Cancelar</a>
-</form>
+  <div class="bg-white rounded p-4 shadow-sm">
+    <form method="post">
+      {% csrf_token %}
+      {{ form.as_p }}
+
+      <div class="flex items-center gap-3 mt-4">
+        <button type="submit" class="bg-red-600 text-white px-4 py-2 rounded text-sm hover:bg-red-700 transition-colors">
+          Guardar
+        </button>
+        <a href="{% url 'detalle_ticket' ticket.id %}" class="text-sm text-gray-600 hover:text-red-600 transition-colors">
+          Cancelar
+        </a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

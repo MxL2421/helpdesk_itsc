@@ -1,7 +1,10 @@
+
 {% extends 'base.html' %}
+{% load static %}
 {% block title %}Historial de Notificaciones{% endblock %}
 
 {% block content %}
+
 <div class="border border-gray-300 rounded-lg p-4 bg-gray-100 flex-1 m-8">
   <h1 class="text-red-500 font-semibold mb-4">Historial de Notificaciones</h1>
 
@@ -14,8 +17,8 @@
       <option value="si" {% if enviada_actual == 'si' %}selected{% endif %}>Enviadas</option>
       <option value="no" {% if enviada_actual == 'no' %}selected{% endif %}>No enviadas</option>
     </select>
-    <button type="submit" class="bg-red-600 text-white px-4 py-2 rounded text-sm">
-      <i class="fa-solid fa-magnifying-glass"></i>
+    <button type="submit" class="bg-red-600 text-white  rounded text-sm">
+        <img src="{% static 'img/buscar.png' %}" alt="Buscar" class="h-8 w-12 object-contain">
     </button>
     <a href="{% url 'admin_notificaciones' %}" class="bg-gray-200 text-gray-700 px-4 py-2 rounded text-sm hover:bg-gray-300">
       Limpiar

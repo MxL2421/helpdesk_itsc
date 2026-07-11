@@ -85,15 +85,22 @@
 <div class="border border-gray-300 rounded-lg p-6 bg-gray-50 mt-6"><!--accion-->
   <h2 class="text-sm font-semibold text-gray-900 mb-3">Acciones</h2>
   <div class="flex flex-wrap gap-2">
+    
     {% if user.rol == 'tecnico' and not ticket.tecnico %}
-      <form method="post" action="{% url 'autoasignar_ticket' ticket.id %}">
-        {% csrf_token %}
-        <button type="submit"
-                class="text-sm font-medium px-4 py-2 rounded-md bg-red-600 text-white hover:bg-red-700">
-          Autoasignarme este ticket
-        </button>
-      </form>
-       {% endif %}
+<form method="post" action="{% url 'autoasignar_ticket' ticket.id %}">
+    {% csrf_token %}
+       <select name="prioridad" required class="border border-gray-300 rounded px-3 py-2 text-sm mr-2">
+        <option value="">Selecciona prioridad</option>
+        <option value="baja">Baja</option>
+        <option value="media">Media</option>
+         <option value="alta">Alta</option>
+     </select>
+<button type="submit" onclick="this.disabled=true; this.form.submit();"
+        class="bg-blue-600 text-white px-4 py-2 rounded text-sm">
+        Autoasignarme este ticket
+</button>
+</form>
+{% endif %}
 
        {% if ticket.tecnico == user and ticket.estado != 'cerrado' %}
       <a href="{% url 'actualizar_ticket' ticket.id %}"
@@ -105,7 +112,7 @@
        {% if user.rol == 'administrador' %}
       <a href="{% url 'reasignar_ticket' ticket.id %}"
          class="text-sm font-medium px-4 py-2 rounded-md border border-gray-300 text-gray-700 hover:border-red-600 hover:text-red-600 bg-white">
-        Reasignar técnico
+        {% if ticket.tecnico %}Reasignar técnico{% else %}Asignar técnico{% endif %}
       </a>
        {% endif %}
 
@@ -140,8 +147,52 @@
 <div class="border border-gray-300 rounded-lg p-6 bg-white mt-6">
   <h2 class="text-sm font-semibold text-gray-900 mb-4">Comentarios</h2>
 
-  <!--  aquí sigue la lista de comentarios y el formulario, todavía pendiente -->
+  {% if messages %}
+    {% for message in messages %}
+      <p class="text-sm mb-3 {% if message.tags == 'error' %}text-red-600{% else %}text-green-600{% endif %}">
+        {{ message }}
+      </p>
+    {% endfor %}
+  {% endif %}
 
+  {% for comentario in comentarios %}
+    <div class="border-b border-gray-100 pb-4 mb-4 last:border-0 last:mb-0">
+      <div class="flex items-center justify-between mb-1">
+        <span class="text-sm font-medium text-gray-800">{{ comentario.autor }}</span>
+        <div class="flex items-center gap-2">
+          {% if comentario.es_privado %}
+            <span class="text-xs font-medium px-2 py-0.5 rounded-full bg-yellow-100 text-yellow-800">Privado</span>
+          {% endif %}
+          <span class="text-xs text-gray-400">{{ comentario.fecha|date:"d/m/Y H:i" }}</span>
+        </div>
+      </div>
+      <p class="text-sm text-gray-700 whitespace-pre-line">{{ comentario.contenido }}</p>
+    </div>
+  {% empty %}
+    <p class="text-sm text-gray-400">No hay comentarios aún.</p>
+  {% endfor %}
+
+  {% if user.rol == 'tecnico' or user.rol == 'administrador' %}
+  <div class="border-t border-gray-200 pt-4 mt-4">
+    <h3 class="text-sm font-semibold text-gray-900 mb-3">Agregar comentario</h3>
+    <form method="post" class="space-y-3">
+      {% csrf_token %}
+      {{ form.contenido }}
+      {% if user.rol == 'administrador' or ticket.tecnico == user %}
+        <div class="flex items-center gap-2">
+          {{ form.es_privado }}
+          <label class="text-sm text-gray-600">Comentario privado (solo visible para técnicos y administradores)</label>
+        </div>
+      {% else %}
+        <input type="hidden" name="es_privado" value="False">
+      {% endif %}
+      <button type="submit" onclick="this.disabled=true; this.form.submit();"
+        class="text-sm font-medium px-4 py-2 rounded-md bg-red-600 text-white hover:bg-red-700">
+        Comentar
+      </button>
+    </form>
+  </div>
+  {% endif %}
 </div>
 
 {% endblock %}
