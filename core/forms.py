@@ -47,12 +47,16 @@ class TicketForm(forms.ModelForm):
         widgets = {
             'titulo': forms.TextInput(attrs={
                 'placeholder': 'Escribe un título breve y descriptivo',
+                'class': 'w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-red-500',
             }),
             'asunto': forms.Textarea(attrs={
                 'placeholder': 'Describe el problema con el mayor detalle posible',
                 'rows': 4,
+                'class': 'w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-red-500',
             }),
-            'categoria': forms.Select(),
+            'categoria': forms.Select(attrs={
+                'class': 'w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-red-500',
+            }),
         }
 
 

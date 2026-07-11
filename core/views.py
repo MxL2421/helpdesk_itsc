@@ -111,16 +111,19 @@ def logout_view(request):
 
 @login_required
 def notificaciones(request):
-    notifs = Notificacion.objects.filter(
+    notifs = list(Notificacion.objects.filter(
         destinatario=request.user,
         leida=False
-    ).order_by('-fecha_envio')
+    ).order_by('-fecha_envio'))
 
-    notifs.update(leida=True)
+    Notificacion.objects.filter(
+        destinatario=request.user,
+        leida=False
+    ).update(leida=True)
 
     return render(request, 'notificaciones.html', {'notificaciones': notifs})
-@login_required
 
+@login_required
 def admin_notificaciones(request):
     if request.user.rol != 'administrador':
         return HttpResponseForbidden('Acceso denegado.')
