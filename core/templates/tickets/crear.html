@@ -34,7 +34,41 @@
           </label>
           {{ form.maestros }}
      </div>
-     
+        <!-- Campos adicionales para técnicos -->
+    {% if user.rol == 'tecnico' %}
+<div class="border border-gray-200 rounded p-4 bg-white mb-4">
+<p class="text-sm font-medium text-gray-700 mb-3">Opciones para técnicos</p>
+ 
+      <div class="mb-3">
+<label class="block text-sm font-medium text-gray-700 mb-1">
+          {{ form.crear_a_nombre_de.label }}
+</label>
+        {{ form.crear_a_nombre_de }}
+</div>
+ 
+      <div class="flex items-center gap-2 mb-3">
+        {{ form.autoasignar }}
+<label class="text-sm text-gray-700">{{ form.autoasignar.label }}</label>
+</div>
+ 
+      <div id="campo-prioridad" class="hidden">
+<label class="block text-sm font-medium text-gray-700 mb-1">
+          {{ form.prioridad_inicial.label }}
+</label>
+        {{ form.prioridad_inicial }}
+</div>
+</div>
+ 
+    <script>
+      const chkAutoasignar = document.getElementById('id_autoasignar');
+      const campoPrioridad = document.getElementById('campo-prioridad');
+ 
+      chkAutoasignar.addEventListener('change', function() {
+        campoPrioridad.classList.toggle('hidden', !this.checked);
+      });
+</script>
+    {% endif %}
+ 
     <!-- Adjuntos -->
     <div id="adjuntos-container" class="hidden">
       {% for adjunto_form in formset %}
@@ -90,5 +124,35 @@
     </div>
 
   </form>
+
 </div>
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+ 
+<script>
+
+  $(document).ready(function() {
+
+    $('select[name="maestros"]').select2({
+
+      placeholder: 'Buscar maestro...',
+
+      allowClear: true,
+
+      width: '100%',
+
+      language: {
+
+        noResults: function() { return "No se encontraron maestros"; },
+
+        searching: function() { return "Buscando..."; }
+
+      }
+
+    });
+
+  });
+</script>
+ 
 {% endblock %}

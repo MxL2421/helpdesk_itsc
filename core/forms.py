@@ -11,15 +11,49 @@ from django.contrib.auth.forms import PasswordChangeForm
 
 class TicketForm(forms.ModelForm):
     maestros = forms.ModelMultipleChoiceField(
-    queryset=Usuario.objects.filter(rol='maestro', is_active=True),
-    required=False,
-    label='Etiquetar maestros (opcional)',
-    widget=forms.SelectMultiple(attrs={'style': 'width: 100%'})
+        queryset=Usuario.objects.filter(rol='maestro', is_active=True),
+        required=False,
+        label='Etiquetar maestros (opcional)',
+        widget=forms.SelectMultiple(attrs={'style': 'width: 100%'})
+    )
+
+    # Campos adicionales para técnicos
+    crear_a_nombre_de = forms.ModelChoiceField(
+        queryset=Usuario.objects.all(),
+        required=False,
+        label='Crear a nombre de (opcional)',
+        empty_label='Selecciona un usuario'
+    )
+
+    autoasignar = forms.BooleanField(
+        required=False,
+        label='Asignarme este ticket'
+    )
+
+    prioridad_inicial = forms.ChoiceField(
+        choices=[('', 'Selecciona prioridad'), ('baja', 'Baja'), ('media', 'Media'), ('alta', 'Alta')],
+        required=False,
+        label='Prioridad'
     )
 
     class Meta:
         model = Ticket
         fields = ['titulo', 'asunto', 'categoria']
+        labels = {
+            'titulo': 'Título',
+            'asunto': 'Descripción del problema',
+            'categoria': 'Categoría',
+        }
+        widgets = {
+            'titulo': forms.TextInput(attrs={
+                'placeholder': 'Escribe un título breve y descriptivo',
+            }),
+            'asunto': forms.Textarea(attrs={
+                'placeholder': 'Describe el problema con el mayor detalle posible',
+                'rows': 4,
+            }),
+            'categoria': forms.Select(),
+        }
 
 
 class EtiquetarMaestroForm(forms.Form):
@@ -136,6 +170,9 @@ class CrearUsuarioForm(forms.ModelForm):
             'carrera': 'Carrera',
             'areas': 'Áreas asignadas',
         }
+        widgets = {
+            'areas': forms.CheckboxSelectMultiple,
+        }
 
     def clean_password2(self):
         password1 = self.cleaned_data.get('password1')
@@ -181,6 +218,9 @@ class EditarUsuarioForm(forms.ModelForm):
             'carrera': 'Carrera',
             'areas': 'Áreas asignadas',
             'is_active': 'Usuario activo',
+        }
+        widgets = {
+            'areas': forms.CheckboxSelectMultiple,
         }
 
 
