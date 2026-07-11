@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 {% block title %}Dashboard{% endblock %}
-
+{% load static %}
 {% block content %}
 <div class="p-6">
 
@@ -73,12 +73,11 @@
     </table>
   </div>
   {% else %}
-  <div class="bg-white border border-green-200 rounded-lg p-4 text-center">
-    <p class="text-green-600 text-sm">✅ No hay tickets próximos a expirar.</p>
-  </div>
-  {% endif %}
-
+<div class="bg-white border border-green-200 rounded-lg p-4 text-center flex items-center justify-center gap-2 text-green-600 text-sm">
+  <img src="{% static 'img/lista.png' %}" alt="" class="h-4 w-auto">
+  No hay tickets próximos a expirar.
 </div>
+{% endif %}
 
 <script>
   document.querySelectorAll('tr[data-url]').forEach(row => {

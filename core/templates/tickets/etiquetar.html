@@ -1,14 +1,29 @@
-<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
-<script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-
-<h1>Etiquetar Maestro: {{ ticket.titulo }}</h1>
+{% extends 'base.html' %}
+{% block title %}Etiquetar Maestro{% endblock %}
+ 
+{% block content %}
+<div class="border border-gray-300 rounded-lg p-4 bg-gray-100 max-w-2xl mx-auto m-8">
+<h1 class="text-red-500 font-semibold mb-4">Etiquetar Maestro: {{ ticket.titulo }}</h1>
 <form method="post">
     {% csrf_token %}
     {{ form.as_p }}
-    <button type="submit">Etiquetar</button>
-    <a href="{% url 'detalle_ticket' ticket.id %}">Cancelar</a>
+<div class="flex gap-2 mt-4">
+<button type="submit" onclick="this.disabled=true; this.form.submit();"
+        class="bg-red-600 text-white px-4 py-2 rounded text-sm hover:bg-red-700">
+        Etiquetar
+</button>
+<a href="{% url 'detalle_ticket' ticket.id %}" 
+         class="bg-gray-200 text-gray-700 px-4 py-2 rounded text-sm hover:bg-gray-300">
+        Cancelar
+</a>
+</div>
 </form>
+</div>
+ 
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+ 
 <script>
   $(document).ready(function() {
     $('select[name="maestros"]').select2({
@@ -22,3 +37,5 @@
     });
   });
 </script>
+ 
+{% endblock %}
