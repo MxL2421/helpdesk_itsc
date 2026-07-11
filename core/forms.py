@@ -1,5 +1,5 @@
 from django import forms
-from .models import Ticket, Usuario, Adjunto, Comentario, Categoria
+from .models import Ticket, Usuario, Adjunto, Comentario, Categoria, Area
 from django.contrib.auth.forms import AuthenticationForm
 from django import forms
 from django.forms import inlineformset_factory
@@ -101,11 +101,16 @@ class ActualizarTicketForm(forms.ModelForm):
 class ReasignarTicketForm(forms.ModelForm):
     class Meta:
         model = Ticket
-        fields = ['tecnico']
+        fields = ['tecnico', 'prioridad']
+        labels = {
+            'tecnico': 'Técnico',
+            'prioridad': 'Prioridad',
+        }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['tecnico'].queryset = Usuario.objects.filter(rol='tecnico', is_active=True)
+        self.fields['prioridad'].required = False
 
 # Redirección de ticket (cambio de categoría)
 
@@ -121,7 +126,11 @@ class ComentarioForm(forms.ModelForm):
         model = Comentario
         fields = ['contenido', 'es_privado']
         widgets = {
-            'contenido': forms.Textarea(attrs={'rows': 3, 'placeholder': 'Escribe un comentario...'}),
+            'contenido': forms.Textarea(attrs={
+                'rows': 3,
+                'placeholder': 'Escribe un comentario...',
+                'class': 'w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-red-500',
+            }),
         }
 
 def validar_tipo_archivo(archivo):
@@ -247,9 +256,10 @@ class ConfirmarPasswordForm(forms.Form):
 class CategoriaForm(forms.ModelForm):
     class Meta:
         model = Categoria
-        fields = ['nombre']
+        fields = ['nombre', 'area']
         labels = {
             'nombre': 'Nombre de la categoría',
+            'area': 'Área',
         }
 
 class EliminarCategoriaForm(forms.Form):

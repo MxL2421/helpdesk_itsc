@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
-from .models import Usuario, Categoria, Ticket
+from .models import Usuario, Categoria, Ticket, Area
 
 
 class UsuarioAdmin(UserAdmin):

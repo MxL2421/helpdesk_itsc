@@ -14,11 +14,11 @@ from .forms import (
     AdjuntoFormSet, ReasignarTicketForm, EtiquetarMaestroForm,
     RedirigirTicketForm, ComentarioForm, CambiarContrasenaForm, 
     CrearUsuarioForm, EditarUsuarioForm, ConfirmarPasswordForm,
-    CategoriaForm, EliminarCategoriaForm
+    CategoriaForm, EliminarCategoriaForm, AreaForm
 )
 from .models import (
     Ticket, HistorialTicket, TicketEtiquetado, Comentario, Notificacion,
-    Usuario, Categoria
+    Usuario, Categoria, Area
 )
 
 
@@ -162,7 +162,7 @@ def dashboard(request):
     if request.user.rol == 'tecnico':
         areas = request.user.areas.all()
         if areas.exists():
-            tickets_base = Ticket.objects.filter(categoria__in=areas)
+            tickets_base = Ticket.objects.filter(categoria__area__in=areas)
         else:
             tickets_base = Ticket.objects.none()
     else:
@@ -326,7 +326,7 @@ def lista_tickets(request):
     elif request.user.rol == 'tecnico':
         areas = request.user.areas.all()
         if areas.exists():
-            tickets = Ticket.objects.filter(categoria__in=areas)
+            tickets = Ticket.objects.filter(categoria__area__in=areas)
         else:
             tickets = Ticket.objects.none()
     else:
@@ -456,7 +456,7 @@ def autoasignar_ticket(request, ticket_id):
         messages.error(request, 'Este ticket ya tiene un técnico asignado.')
         return redirect('detalle_ticket', ticket_id=ticket.id)
 
-    if not request.user.areas.filter(id=ticket.categoria.id).exists():
+    if not request.user.areas.filter(categorias=ticket.categoria).exists():
         messages.error(request, 'No puedes autoasignarte un ticket fuera de tu área.')
         return redirect('detalle_ticket', ticket_id=ticket.id)
 
@@ -559,11 +559,14 @@ def reasignar_ticket(request, ticket_id):
         return HttpResponseForbidden('Solo el administrador puede reasignar tickets.')
 
     tecnico_anterior = ticket.tecnico
+    prioridad_anterior = ticket.prioridad
 
     if request.method == 'POST':
         form = ReasignarTicketForm(request.POST, instance=ticket)
         if form.is_valid():
-            ticket_actualizado = form.save()
+            ticket_actualizado = form.save(commit=False)
+            ticket_actualizado.fecha_limite = calcular_fecha_limite(ticket_actualizado)
+            ticket_actualizado.save()
 
             if tecnico_anterior != ticket_actualizado.tecnico:
                 HistorialTicket.objects.create(
@@ -583,7 +586,16 @@ def reasignar_ticket(request, ticket_id):
                         destinatario_usuario=ticket_actualizado.tecnico
                     )
 
-            messages.success(request, 'Técnico reasignado correctamente.')
+            if prioridad_anterior != ticket_actualizado.prioridad:
+                HistorialTicket.objects.create(
+                    campo='prioridad',
+                    valor_anterior=prioridad_anterior or 'Sin asignar',
+                    valor_nuevo=ticket_actualizado.prioridad or 'Sin asignar',
+                    ticket=ticket_actualizado,
+                    usuario=request.user
+                )
+
+            messages.success(request, 'Ticket actualizado correctamente.')
             return redirect('detalle_ticket', ticket_id=ticket.id)
     else:
         form = ReasignarTicketForm(instance=ticket)
@@ -925,4 +937,79 @@ def admin_eliminar_categoria(request, categoria_id):
         'form': form,
         'categoria': categoria,
         'cantidad': cantidad,
+    })
+
+# ─── PANEL ADMINISTRATIVO — ÁREAS ─────────────────────────────────────────────
+
+@login_required
+def admin_areas(request):
+    if request.user.rol != 'administrador':
+        return HttpResponseForbidden('Acceso denegado.')
+
+    areas = Area.objects.all().order_by('nombre')
+    return render(request, 'admin/areas.html', {'areas': areas})
+
+
+@login_required
+def admin_crear_area(request):
+    if request.user.rol != 'administrador':
+        return HttpResponseForbidden('Acceso denegado.')
+
+    if request.method == 'POST':
+        form = AreaForm(request.POST)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Área creada correctamente.')
+            return redirect('admin_areas')
+    else:
+        form = AreaForm()
+
+    return render(request, 'admin/crear_area.html', {'form': form})
+
+
+@login_required
+def admin_editar_area(request, area_id):
+    if request.user.rol != 'administrador':
+        return HttpResponseForbidden('Acceso denegado.')
+
+    area = get_object_or_404(Area, id=area_id)
+
+    if request.method == 'POST':
+        form = AreaForm(request.POST, instance=area)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Área actualizada correctamente.')
+            return redirect('admin_areas')
+    else:
+        form = AreaForm(instance=area)
+
+    return render(request, 'admin/editar_area.html', {'form': form, 'area': area})
+
+
+@login_required
+def admin_eliminar_area(request, area_id):
+    if request.user.rol != 'administrador':
+        return HttpResponseForbidden('Acceso denegado.')
+
+    area = get_object_or_404(Area, id=area_id)
+    categorias_asociadas = Categoria.objects.filter(area=area).count()
+
+    if request.method == 'POST':
+        form = ConfirmarPasswordForm(request.user, request.POST)
+        if form.is_valid():
+            if categorias_asociadas > 0:
+                messages.error(request, f'No se puede eliminar el área "{area.nombre}" porque tiene {categorias_asociadas} categoría(s) asociada(s).')
+                return redirect('admin_areas')
+            area.delete()
+            messages.success(request, f'Área "{area.nombre}" eliminada correctamente.')
+            return redirect('admin_areas')
+    else:
+        form = ConfirmarPasswordForm(request.user)
+
+    return render(request, 'admin/confirmar_eliminar.html', {
+        'form': form,
+        'objeto': area.nombre,
+        'tipo': 'área',
+        'url_cancelar': 'admin_areas',
+        'advertencia': f'Esta área tiene {categorias_asociadas} categoría(s) asociada(s). No podrá eliminarse.' if categorias_asociadas > 0 else None
     })

@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+{% block title %}Crear Área{% endblock %}
+
+{% block content %}
+<div class="border border-gray-300 rounded-lg p-4 bg-gray-100 max-w-md mx-auto m-8">
+  <h1 class="text-red-500 font-semibold mb-4">Nueva Área</h1>
+  <form method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <div class="flex gap-2 mt-4">
+      <button type="submit" onclick="this.disabled=true; this.form.submit();"
+        class="bg-red-600 text-white px-4 py-2 rounded text-sm hover:bg-red-700">
+        Crear área
+      </button>
+      <a href="{% url 'admin_areas' %}" class="bg-gray-200 text-gray-700 px-4 py-2 rounded text-sm hover:bg-gray-300">
+        Cancelar
+      </a>
+    </div>
+  </form>
+</div>
+{% endblock %}

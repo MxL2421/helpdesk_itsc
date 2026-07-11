@@ -35,7 +35,7 @@ class Usuario(AbstractBaseUser, PermissionsMixin):
     }
     
     areas = models.ManyToManyField(
-    'Categoria',
+    'Area',
     blank=True,
     related_name='tecnicos',
     verbose_name='Áreas asignadas'
@@ -65,9 +65,19 @@ class Usuario(AbstractBaseUser, PermissionsMixin):
     def get_full_name(self):
         return f'{self.nombre} {self.apellido}'
 
+class Area(models.Model):
+    nombre = models.CharField(max_length=100)
+
+    class Meta:
+        db_table = 'area'
+
+    def __str__(self):
+        return self.nombre
+
 
 class Categoria(models.Model):
     nombre = models.CharField(max_length=100)
+    area = models.ForeignKey(Area, on_delete=models.PROTECT, null=True, blank=True, related_name='categorias')
 
     class Meta:
         db_table = 'categoria'
