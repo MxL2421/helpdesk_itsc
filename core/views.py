@@ -275,6 +275,46 @@ def crear_ticket(request):
 
     return render(request, 'tickets/crear.html', {'form': form, 'formset': formset})
 
+@login_required
+def agregar_adjunto(request, ticket_id):
+    ticket = get_object_or_404(Ticket, id=ticket_id)
+    user = request.user
+
+    es_creador = ticket.creador == user
+    es_tecnico_o_admin = user.rol in ['tecnico', 'administrador']
+    esta_etiquetado = ticket.ticketetiquetado_set.filter(usuario=user).exists()
+
+    if not (es_creador or es_tecnico_o_admin or esta_etiquetado):
+        return HttpResponseForbidden('No tienes permiso para agregar adjuntos a este ticket.')
+
+    if request.method == 'POST':
+        archivo = request.FILES.get('archivo')
+        if archivo:
+            from .forms import validar_tipo_archivo
+            try:
+                validar_tipo_archivo(archivo)
+            except Exception as e:
+                messages.error(request, str(e))
+                return redirect('detalle_ticket', ticket_id=ticket.id)
+
+            adjuntos_actuales = ticket.adjuntos.count()
+            if adjuntos_actuales >= 5:
+                messages.error(request, 'El ticket ya tiene el máximo de 5 archivos adjuntos.')
+                return redirect('detalle_ticket', ticket_id=ticket.id)
+
+            from .models import Adjunto
+            adjunto = Adjunto.objects.create(
+                ticket=ticket,
+                ruta=archivo,
+                nombre_archivo=archivo.name,
+                tipo_mime=archivo.content_type if hasattr(archivo, 'content_type') else 'desconocido'
+            )
+            messages.success(request, f'Archivo "{archivo.name}" adjuntado correctamente.')
+        else:
+            messages.error(request, 'No se seleccionó ningún archivo.')
+
+    return redirect('detalle_ticket', ticket_id=ticket.id)
+
 
 @login_required
 def lista_tickets(request):
