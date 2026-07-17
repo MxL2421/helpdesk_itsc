@@ -56,8 +56,8 @@ def enviar_notificacion(ticket, destinatario_correo, asunto, mensaje, destinatar
 
 def calcular_fecha_limite(ticket):
     TIEMPOS = {
-        'alta': timedelta(hours=4),
-        'media': timedelta(hours=24),
+        'alta': timedelta(hours=24),
+        'media': timedelta(hours=48),
         'baja': timedelta(hours=72),
     }
     if ticket.prioridad and ticket.prioridad in TIEMPOS:
@@ -168,42 +168,106 @@ def dashboard(request):
     else:
         tickets_base = Ticket.objects.all()
 
-    total = tickets_base.count()
+    # ── ESTADÍSTICAS ADMINISTRADOR ──────────────────────────────────────────
+    if request.user.rol == 'administrador':
+        from .models import Usuario
+        total = tickets_base.count()
+        abiertos = tickets_base.filter(estado__in=['nuevo', 'en_revision', 'en_progreso']).count()
+        cerrados = tickets_base.filter(estado='cerrado').count()
+        total_usuarios = Usuario.objects.filter(is_active=True).count()
 
-    pendientes = tickets_base.filter(
-        estado__in=['nuevo', 'en_revision', 'en_progreso']
-    ).count()
+        # Gráfico por estado
+        estados = {
+            'Nuevo': tickets_base.filter(estado='nuevo').count(),
+            'En revisión': tickets_base.filter(estado='en_revision').count(),
+            'En progreso': tickets_base.filter(estado='en_progreso').count(),
+            'Desestimado': tickets_base.filter(estado='desestimado').count(),
+            'Cerrado': tickets_base.filter(estado='cerrado').count(),
+        }
 
-    resueltos = tickets_base.filter(estado='cerrado').count()
+        # Gráfico por categoría
+        from .models import Categoria
+        categorias_data = {}
+        for categoria in Categoria.objects.all():
+            categorias_data[categoria.nombre] = tickets_base.filter(categoria=categoria).count()
 
-    por_expirar = tickets_base.filter(
-        estado__in=['nuevo', 'en_revision', 'en_progreso'],
-        fecha_limite__isnull=False,
-        fecha_limite__lte=ahora + timedelta(hours=2),
-        fecha_limite__gte=ahora
-    ).count()
+        # Últimos tickets creados
+        ultimos_tickets = tickets_base.order_by('-fecha_creacion')[:10]
 
-    expirados = tickets_base.filter(
-        estado__in=['nuevo', 'en_revision', 'en_progreso'],
-        fecha_limite__isnull=False,
-        fecha_limite__lt=ahora
-    ).count()
+        # Tickets urgentes
+        por_expirar = tickets_base.filter(
+            estado__in=['nuevo', 'en_revision', 'en_progreso'],
+            fecha_limite__isnull=False,
+            fecha_limite__lte=ahora + timedelta(hours=2),
+            fecha_limite__gte=ahora
+        ).count()
 
-    tickets_urgentes = tickets_base.filter(
-        estado__in=['nuevo', 'en_revision', 'en_progreso'],
-        fecha_limite__isnull=False,
-        fecha_limite__lte=ahora + timedelta(hours=2)
-    ).order_by('fecha_limite')[:5]
+        expirados = tickets_base.filter(
+            estado__in=['nuevo', 'en_revision', 'en_progreso'],
+            fecha_limite__isnull=False,
+            fecha_limite__lt=ahora
+        ).count()
 
-    return render(request, 'dashboard.html', {
-        'total': total,
-        'pendientes': pendientes,
-        'resueltos': resueltos,
-        'por_expirar': por_expirar,
-        'expirados': expirados,
-        'tickets_urgentes': tickets_urgentes,
-        'ahora': ahora,
-    })
+        tickets_urgentes = tickets_base.filter(
+            estado__in=['nuevo', 'en_revision', 'en_progreso'],
+            fecha_limite__isnull=False,
+            fecha_limite__lte=ahora + timedelta(hours=2)
+        ).order_by('fecha_limite')[:5]
+
+        return render(request, 'dashboard.html', {
+            'total': total,
+            'abiertos': abiertos,
+            'cerrados': cerrados,
+            'total_usuarios': total_usuarios,
+            'estados': estados,
+            'categorias_data': categorias_data,
+            'ultimos_tickets': ultimos_tickets,
+            'por_expirar': por_expirar,
+            'expirados': expirados,
+            'tickets_urgentes': tickets_urgentes,
+            'ahora': ahora,
+        })
+
+    # ── ESTADÍSTICAS TÉCNICO ────────────────────────────────────────────────
+    else:
+        mis_tickets = Ticket.objects.filter(tecnico=request.user)
+        total = mis_tickets.count()
+        pendientes = mis_tickets.filter(estado__in=['nuevo', 'en_revision']).count()
+        en_progreso = mis_tickets.filter(estado='en_progreso').count()
+        cerrados_por_mi = mis_tickets.filter(estado='cerrado').count()
+
+        ultimos_tickets = mis_tickets.order_by('-fecha_creacion')[:10]
+
+        por_expirar = mis_tickets.filter(
+            estado__in=['nuevo', 'en_revision', 'en_progreso'],
+            fecha_limite__isnull=False,
+            fecha_limite__lte=ahora + timedelta(hours=2),
+            fecha_limite__gte=ahora
+        ).count()
+
+        expirados = mis_tickets.filter(
+            estado__in=['nuevo', 'en_revision', 'en_progreso'],
+            fecha_limite__isnull=False,
+            fecha_limite__lt=ahora
+        ).count()
+
+        tickets_urgentes = mis_tickets.filter(
+            estado__in=['nuevo', 'en_revision', 'en_progreso'],
+            fecha_limite__isnull=False,
+            fecha_limite__lte=ahora + timedelta(hours=2)
+        ).order_by('fecha_limite')[:5]
+
+        return render(request, 'dashboard.html', {
+            'total': total,
+            'pendientes': pendientes,
+            'en_progreso': en_progreso,
+            'cerrados_por_mi': cerrados_por_mi,
+            'ultimos_tickets': ultimos_tickets,
+            'por_expirar': por_expirar,
+            'expirados': expirados,
+            'tickets_urgentes': tickets_urgentes,
+            'ahora': ahora,
+        })
 
 @login_required
 def crear_ticket(request):

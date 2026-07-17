@@ -68,6 +68,21 @@ class EtiquetarMaestroForm(forms.Form):
         widget=forms.SelectMultiple(attrs={'style': 'width: 100%'})
     )
 
+def validar_tipo_archivo(archivo):
+    tipos_permitidos = [
+        'image/jpeg',
+        'image/png',
+        'image/gif',
+        'image/webp',
+        'application/pdf',
+        'application/msword',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    ]
+    if hasattr(archivo, 'content_type') and archivo.content_type not in tipos_permitidos:
+        raise ValidationError(
+            'Tipo de archivo no permitido. Solo se aceptan imágenes, PDF y documentos Word.'
+        )
+    
 class AdjuntoForm(forms.ModelForm):
     class Meta:
         model = Adjunto
@@ -133,20 +148,6 @@ class ComentarioForm(forms.ModelForm):
             }),
         }
 
-def validar_tipo_archivo(archivo):
-    tipos_permitidos = [
-        'image/jpeg',
-        'image/png',
-        'image/gif',
-        'image/webp',
-        'application/pdf',
-        'application/msword',
-        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-    ]
-    if hasattr(archivo, 'content_type') and archivo.content_type not in tipos_permitidos:
-        raise ValidationError(
-            'Tipo de archivo no permitido. Solo se aceptan imágenes, PDF y documentos Word.'
-        )
     
 class CambiarContrasenaForm(PasswordChangeForm):
     def __init__(self, *args, **kwargs):
@@ -288,3 +289,11 @@ class EliminarCategoriaForm(forms.Form):
     def clean(self):
         cleaned_data = super().clean()
         return cleaned_data
+    
+class AreaForm(forms.ModelForm):
+    class Meta:
+        model = Area
+        fields = ['nombre']
+        labels = {
+            'nombre': 'Nombre del área',
+        }
