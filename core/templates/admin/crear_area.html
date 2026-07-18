@@ -2,20 +2,34 @@
 {% block title %}Crear Área{% endblock %}
 
 {% block content %}
-<div class="border border-gray-300 rounded-lg p-4 bg-gray-100 max-w-md mx-auto m-8">
-  <h1 class="text-red-500 font-semibold mb-4">Nueva Área</h1>
-  <form method="post">
-    {% csrf_token %}
-    {{ form.as_p }}
-    <div class="flex gap-2 mt-4">
-      <button type="submit" onclick="this.disabled=true; this.form.submit();"
-        class="bg-red-600 text-white px-4 py-2 rounded text-sm hover:bg-red-700">
-        Crear área
-      </button>
-      <a href="{% url 'admin_areas' %}" class="bg-gray-200 text-gray-700 px-4 py-2 rounded text-sm hover:bg-gray-300">
-        Cancelar
-      </a>
-    </div>
-  </form>
+<div class="max-w-md mx-auto mt-8">
+  <div class="bg-gray-200 border border-gray-200 rounded-lg p-6 shadow-sm">
+    <h1 class="text-center text-red-500 font-semibold mb-6">Nueva Área</h1>
+
+    <form method="post">
+      {% csrf_token %}
+
+      <div class="mb-4">
+        <label for="{{ form.nombre.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">
+          Nombre del área
+        </label>
+        {{ form.nombre }}
+        {% if form.nombre.errors %}
+          <p class="text-red-600 text-xs mt-1">{{ form.nombre.errors.0 }}</p>
+        {% endif %}
+      </div>
+
+      <div class="flex gap-2 mt-6">
+        <button type="submit" onclick="this.disabled=true; this.form.submit();"
+          class="bg-red-600 text-white px-4 py-2 rounded text-sm hover:bg-red-700">
+          Crear área
+        </button>
+        <a href="{% url 'admin_areas' %}"
+          class="bg-gray-200 text-gray-700 px-4 py-2 rounded text-sm hover:bg-gray-300 flex items-center">
+          Cancelar
+        </a>
+      </div>
+    </form>
+  </div>
 </div>
 {% endblock %}
