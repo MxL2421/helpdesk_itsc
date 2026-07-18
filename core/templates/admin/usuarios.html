@@ -73,12 +73,7 @@
             {% if usuario.is_active %}Desactivar{% else %}Activar{% endif %}
           </a>
           
-            {% if not usuario.tickets_creados.exists and not usuario.tickets_asignados.exists %}
-              <a href="{% url 'admin_eliminar_usuario' usuario.id %}"
-                 class="text-red-600 hover:underline text-xs">
-                Eliminar
-              </a>
-            {% endif %}
+           
           </div>
         </td>
       </tr>

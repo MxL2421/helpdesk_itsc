@@ -1,90 +1,246 @@
 {% extends 'base.html' %}
 {% block title %}Dashboard{% endblock %}
-{% load static %}
+ 
 {% block content %}
-<div class="p-6">
-
-  {% if user.rol == 'tecnico' %}
-    <h1 class="text-center text-red-500 font-semibold mb-6">Mis Tickets Asignados</h1>
-  {% else %}
-    <h1 class="text-center text-red-500 font-semibold mb-6">Dashboard</h1>
-  {% endif %}
-
-  <!-- Tarjetas de estadísticas -->
-  <div class="grid grid-cols-2 gap-4 mb-6 lg:grid-cols-4">
-
-    <div class="bg-white border border-gray-200 rounded-lg p-4 text-center">
-      <p class="text-3xl font-bold text-gray-800">{{ total }}</p>
-      <p class="text-sm text-gray-500 mt-1">
-        {% if user.rol == 'tecnico' %}Mis tickets{% else %}Total de tickets{% endif %}
-      </p>
-    </div>
-
-    <div class="bg-white border border-blue-200 rounded-lg p-4 text-center">
-      <p class="text-3xl font-bold text-blue-600">{{ pendientes }}</p>
-      <p class="text-sm text-gray-500 mt-1">
-        {% if user.rol == 'tecnico' %}Mis pendientes{% else %}Pendientes{% endif %}
-      </p>
-    </div>
-
-    <div class="bg-white border border-green-200 rounded-lg p-4 text-center">
-      <p class="text-3xl font-bold text-green-600">{{ resueltos }}</p>
-      <p class="text-sm text-gray-500 mt-1">
-        {% if user.rol == 'tecnico' %}Mis resueltos{% else %}Resueltos{% endif %}
-      </p>
-    </div>
-
-    <div class="bg-white border border-red-200 rounded-lg p-4 text-center">
-      <p class="text-3xl font-bold text-red-600">{{ expirados }}</p>
-      <p class="text-sm text-gray-500 mt-1">
-        {% if user.rol == 'tecnico' %}Mis expirados{% else %}Expirados{% endif %}
-      </p>
-    </div>
-
-  </div>
+<div class="p-4">
+ 
+  {% if user.rol == 'administrador' %}
+<!-- ═══ DASHBOARD ADMINISTRADOR ═══ -->
+<h1 class="text-center text-red-500 font-semibold mb-6">Dashboard</h1>
+ 
+  <!-- Tarjetas -->
+<div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+<div class="bg-white border border-gray-200 rounded-lg p-4 text-center shadow-sm">
+<p class="text-3xl font-bold text-gray-800">{{ total }}</p>
+<p class="text-sm text-gray-500 mt-1">Total de tickets</p>
+</div>
+<div class="bg-white border border-blue-200 rounded-lg p-4 text-center shadow-sm">
+<p class="text-3xl font-bold text-blue-600">{{ abiertos }}</p>
+<p class="text-sm text-gray-500 mt-1">Tickets abiertos</p>
+</div>
+<div class="bg-white border border-green-200 rounded-lg p-4 text-center shadow-sm">
+<p class="text-3xl font-bold text-green-600">{{ cerrados }}</p>
+<p class="text-sm text-gray-500 mt-1">Tickets cerrados</p>
+</div>
+<div class="bg-white border border-purple-200 rounded-lg p-4 text-center shadow-sm">
+<p class="text-3xl font-bold text-purple-600">{{ total_usuarios }}</p>
+<p class="text-sm text-gray-500 mt-1">Usuarios activos</p>
+</div>
+</div>
+ 
+  <!-- Gráficos -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
+ 
+    <!-- Gráfico por estado -->
+<div class="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+<h2 class="text-sm font-semibold text-gray-700 mb-3">Tickets por estado</h2>
+<canvas id="graficoEstados" height="200"></canvas>
+</div>
+ 
+    <!-- Gráfico por categoría -->
+<div class="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+<h2 class="text-sm font-semibold text-gray-700 mb-3">Tickets por categoría</h2>
+<canvas id="graficoCategorias" height="200"></canvas>
+</div>
+ 
 
   <!-- Tickets urgentes -->
   {% if tickets_urgentes %}
-  <div class="bg-white border border-orange-200 rounded-lg p-4">
-    <h2 class="font-semibold text-orange-600 mb-3">
-      ⚠️ Tickets por expirar (próximas 2 horas) — {{ por_expirar }}
-    </h2>
-    <table class="w-full text-sm">
-      <thead class="bg-gray-100">
-        <tr>
-          <th class="p-2 text-left">Ticket</th>
-          <th class="p-2 text-left">Título</th>
-          <th class="p-2 text-left">Prioridad</th>
-          <th class="p-2 text-left">Vence</th>
-        </tr>
-      </thead>
-      <tbody>
+<div class="bg-white border border-orange-200 rounded-lg p-4 mb-6 shadow-sm">
+<h2 class="font-semibold text-orange-600 mb-3">⚠️ Tickets por expirar — {{ por_expirar }}</h2>
+<table class="w-full text-sm">
+<thead class="bg-gray-100">
+<tr>
+<th class="p-2 text-left">Ticket</th>
+<th class="p-2 text-left">Título</th>
+<th class="p-2 text-left">Prioridad</th>
+<th class="p-2 text-left">Vence</th>
+</tr>
+</thead>
+<tbody>
         {% for ticket in tickets_urgentes %}
-        <tr class="border-t hover:bg-gray-50 cursor-pointer" data-url="{% url 'detalle_ticket' ticket.id %}">
-          <td class="p-2">#{{ ticket.id }}</td>
-          <td class="p-2">{{ ticket.titulo }}</td>
-          <td class="p-2">{{ ticket.get_prioridad_display }}</td>
-          <td class="p-2 {% if ticket.fecha_limite < ahora %}text-red-600 font-semibold{% else %}text-orange-500{% endif %}">
+<tr class="border-t hover:bg-gray-50 cursor-pointer" data-url="{% url 'detalle_ticket' ticket.id %}">
+<td class="p-2">#{{ ticket.id }}</td>
+<td class="p-2">{{ ticket.titulo }}</td>
+<td class="p-2">{{ ticket.get_prioridad_display }}</td>
+<td class="p-2 {% if ticket.fecha_limite < ahora %}text-red-600 font-semibold{% else %}text-orange-500{% endif %}">
             {{ ticket.fecha_limite|date:"d/m/Y H:i" }}
-          </td>
-        </tr>
+</td>
+</tr>
         {% endfor %}
-      </tbody>
-    </table>
-  </div>
-  {% else %}
-<div class="bg-white border border-green-200 rounded-lg p-4 text-center flex items-center justify-center gap-2 text-green-600 text-sm">
-  <img src="{% static 'img/lista.png' %}" alt="" class="h-4 w-auto">
-  No hay tickets próximos a expirar.
+</tbody>
+</table>
 </div>
-{% endif %}
-
+  {% endif %}
+ 
+  <!-- Últimos tickets -->
+<div class="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+<h2 class="text-sm font-semibold text-gray-700 mb-3">Últimos tickets creados</h2>
+<table class="w-full text-sm">
+<thead class="bg-gray-100">
+<tr>
+<th class="p-2 text-left">Ticket</th>
+<th class="p-2 text-left">Título</th>
+<th class="p-2 text-left">Categoría</th>
+<th class="p-2 text-left">Estado</th>
+<th class="p-2 text-left">Creador</th>
+<th class="p-2 text-left">Fecha</th>
+</tr>
+</thead>
+<tbody>
+        {% for ticket in ultimos_tickets %}
+<tr class="border-t hover:bg-gray-50 cursor-pointer" data-url="{% url 'detalle_ticket' ticket.id %}">
+<td class="p-2">#{{ ticket.id }}</td>
+<td class="p-2">{{ ticket.titulo }}</td>
+<td class="p-2">{{ ticket.categoria }}</td>
+<td class="p-2">{{ ticket.get_estado_display }}</td>
+<td class="p-2">{{ ticket.creador.get_full_name }}</td>
+<td class="p-2">{{ ticket.fecha_creacion|date:"d/m/Y H:i" }}</td>
+</tr>
+        {% empty %}
+<tr>
+<td colspan="6" class="p-4 text-center text-gray-400 text-sm">No hay tickets creados.</td>
+</tr>
+        {% endfor %}
+</tbody>
+</table>
+</div>
+ 
+  <!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-  document.querySelectorAll('tr[data-url]').forEach(row => {
-    row.addEventListener('click', () => {
-      window.location = row.dataset.url;
+    // Gráfico por estado
+    new Chart(document.getElementById('graficoEstados'), {
+      type: 'doughnut',
+      data: {
+        labels: [{% for k, v in estados.items %}'{{ k }}',{% endfor %}],
+        datasets: [{
+          data: [{% for k, v in estados.items %}{{ v }},{% endfor %}],
+          backgroundColor: ['#3B82F6','#F59E0B','#10B981','#6B7280','#EF4444'],
+        }]
+      },
+      options: { responsive: true, plugins: { legend: { position: 'bottom' } } }
     });
-  });
+ 
+    // Gráfico por categoría
+    new Chart(document.getElementById('graficoCategorias'), {
+      type: 'bar',
+      data: {
+        labels: [{% for k, v in categorias_data.items %}'{{ k }}',{% endfor %}],
+        datasets: [{
+          label: 'Tickets',
+          data: [{% for k, v in categorias_data.items %}{{ v }},{% endfor %}],
+          backgroundColor: '#DC2626',
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { display: false } },
+        scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
+      }
+    });
+ 
+    // Filas clickeables
+    document.querySelectorAll('tr[data-url]').forEach(row => {
+      row.addEventListener('click', () => { window.location = row.dataset.url; });
+    });
 </script>
-
+ 
+  {% else %}
+<!-- ═══ DASHBOARD TÉCNICO ═══ -->
+<h1 class="text-center text-red-500 font-semibold mb-6">Mis Tickets Asignados</h1>
+ 
+  <!-- Tarjetas -->
+<div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+<div class="bg-white border border-gray-200 rounded-lg p-4 text-center shadow-sm">
+<p class="text-3xl font-bold text-gray-800">{{ total }}</p>
+<p class="text-sm text-gray-500 mt-1">Mis tickets</p>
+</div>
+<div class="bg-white border border-blue-200 rounded-lg p-4 text-center shadow-sm">
+<p class="text-3xl font-bold text-blue-600">{{ pendientes }}</p>
+<p class="text-sm text-gray-500 mt-1">Pendientes</p>
+</div>
+<div class="bg-white border border-yellow-200 rounded-lg p-4 text-center shadow-sm">
+<p class="text-3xl font-bold text-yellow-600">{{ en_progreso }}</p>
+<p class="text-sm text-gray-500 mt-1">En progreso</p>
+</div>
+<div class="bg-white border border-green-200 rounded-lg p-4 text-center shadow-sm">
+<p class="text-3xl font-bold text-green-600">{{ cerrados_por_mi }}</p>
+<p class="text-sm text-gray-500 mt-1">Cerrados por mí</p>
+</div>
+</div>
+ 
+  <!-- Tickets urgentes -->
+  {% if tickets_urgentes %}
+<div class="bg-white border border-orange-200 rounded-lg p-4 mb-6 shadow-sm">
+<h2 class="font-semibold text-orange-600 mb-3">⚠️ Mis tickets por expirar — {{ por_expirar }}</h2>
+<table class="w-full text-sm">
+<thead class="bg-gray-100">
+<tr>
+<th class="p-2 text-left">Ticket</th>
+<th class="p-2 text-left">Título</th>
+<th class="p-2 text-left">Prioridad</th>
+<th class="p-2 text-left">Vence</th>
+</tr>
+</thead>
+<tbody>
+        {% for ticket in tickets_urgentes %}
+<tr class="border-t hover:bg-gray-50 cursor-pointer" data-url="{% url 'detalle_ticket' ticket.id %}">
+<td class="p-2">#{{ ticket.id }}</td>
+<td class="p-2">{{ ticket.titulo }}</td>
+<td class="p-2">{{ ticket.get_prioridad_display }}</td>
+<td class="p-2 {% if ticket.fecha_limite < ahora %}text-red-600 font-semibold{% else %}text-orange-500{% endif %}">
+            {{ ticket.fecha_limite|date:"d/m/Y H:i" }}
+</td>
+</tr>
+        {% endfor %}
+</tbody>
+</table>
+</div>
+  {% endif %}
+ 
+  <!-- Últimos tickets asignados -->
+<div class="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+<h2 class="text-sm font-semibold text-gray-700 mb-3">Mis últimos tickets asignados</h2>
+<table class="w-full text-sm">
+<thead class="bg-gray-100">
+<tr>
+<th class="p-2 text-left">Ticket</th>
+<th class="p-2 text-left">Título</th>
+<th class="p-2 text-left">Categoría</th>
+<th class="p-2 text-left">Estado</th>
+<th class="p-2 text-left">Prioridad</th>
+<th class="p-2 text-left">Vence</th>
+</tr>
+</thead>
+<tbody>
+        {% for ticket in ultimos_tickets %}
+<tr class="border-t hover:bg-gray-50 cursor-pointer" data-url="{% url 'detalle_ticket' ticket.id %}">
+<td class="p-2">#{{ ticket.id }}</td>
+<td class="p-2">{{ ticket.titulo }}</td>
+<td class="p-2">{{ ticket.categoria }}</td>
+<td class="p-2">{{ ticket.get_estado_display }}</td>
+<td class="p-2">{{ ticket.prioridad|default:"Sin asignar" }}</td>
+<td class="p-2 {% if ticket.fecha_limite and ticket.fecha_limite < ahora %}text-red-600{% endif %}">
+            {{ ticket.fecha_limite|date:"d/m/Y H:i"|default:"—" }}
+</td>
+</tr>
+        {% empty %}
+<tr>
+<td colspan="6" class="p-4 text-center text-gray-400 text-sm">No tienes tickets asignados.</td>
+</tr>
+        {% endfor %}
+</tbody>
+</table>
+</div>
+ 
+  <script>
+    document.querySelectorAll('tr[data-url]').forEach(row => {
+      row.addEventListener('click', () => { window.location = row.dataset.url; });
+    });
+</script>
+ 
+  {% endif %}
+ 
+</div>
 {% endblock %}

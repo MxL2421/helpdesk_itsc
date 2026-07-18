@@ -53,7 +53,7 @@
   <div class="flex">
 
     <!-- NAV: el menú, igual para todas las páginas de usuario -->
-  <nav class="bg-gray-100 border border-gray-300 w-48 h-screen shrink-0">
+  <nav class="bg-gray-100 border border-gray-300 w-48 min-h-screen shrink-0">
      <ul class="p-4 space-y-8">
        {% if user.rol == 'administrador' or user.rol == 'tecnico' %}
     <li>
@@ -94,7 +94,15 @@
       </a>
     </li>
     {% endif %}
-
+    {% if user.rol == 'administrador' %}
+  <li>
+    <a href="{% url 'admin_areas' %}" class="flex flex-col items-center text-gray-700 hover:text-red-600">
+      <i class="fa-solid fa-map text-2xl"></i>
+        <img src="{% static 'img/estructura.png' %}" alt="Logo" class="h-10 w-auto">
+    <span class="text-sm">Áreas</span>
+   </a>
+</li>
+{% endif %}
     {% if user.rol == 'administrador' %}
     <li>
       <a href="{% url 'admin_categorias' %}" class="flex flex-col items-center text-gray-700 hover:text-red-600">
