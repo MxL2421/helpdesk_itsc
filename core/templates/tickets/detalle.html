@@ -2,9 +2,20 @@
 {% load static %}
 {% block title %}Ticket #{{ ticket.id }} — {{ ticket.titulo }}{% endblock %}
 {% block content %}
+
+  {% if messages %}
+    {% for message in messages %}
+      <p class="text-sm mb-3 {% if message.tags == 'error' %}text-red-600{% else %}text-green-600{% endif %}">
+        {{ message }}
+      </p>
+    {% endfor %}
+  {% endif %}
+
+
 <a href="{% url 'lista_tickets' %}" class="inline-flex items-center gap-1 text-sm text-gray-600 hover:text-red-600">
   <span aria-hidden="true">&larr;</span> Volver a la lista
 </a>
+
 <div class="border border-gray-300 rounded-lg p-6 bg-white">
    <div class="flex items-start justify-between gap-4 flex-wrap">
 
@@ -179,14 +190,6 @@
 
 <div class="border border-gray-300 rounded-lg p-6 bg-white mt-6">
   <h2 class="text-sm font-semibold text-gray-900 mb-4">Comentarios</h2>
-
-  {% if messages %}
-    {% for message in messages %}
-      <p class="text-sm mb-3 {% if message.tags == 'error' %}text-red-600{% else %}text-green-600{% endif %}">
-        {{ message }}
-      </p>
-    {% endfor %}
-  {% endif %}
 
   {% for comentario in comentarios %}
     <div class="border-b border-gray-100 pb-4 mb-4 last:border-0 last:mb-0">
