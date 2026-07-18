@@ -912,7 +912,7 @@ def admin_toggle_usuario(request, usuario_id):
     else:
         form = ConfirmarPasswordForm(request.user)
 
-    accion = 'desactivar' if usuario.activo else 'activar'
+    accion = 'desactivar' if usuario.is_active else 'activar'
 
     return render(request, 'admin/confirmar_toggle.html', {
         'form': form,
