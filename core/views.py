@@ -2,10 +2,12 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login, logout, update_session_auth_hash
 from django.contrib.auth.decorators import login_required
 from django.db import models as django_models
+from django.db import models as db_models
 from django.db.models import Q
 from django.http import HttpResponseForbidden
 from django.contrib import messages
 from django.core.mail import send_mail
+import os
 from django.utils import timezone
 from datetime import timedelta
 
@@ -170,13 +172,15 @@ def dashboard(request):
 
     # ── ESTADÍSTICAS ADMINISTRADOR ──────────────────────────────────────────
     if request.user.rol == 'administrador':
-        from .models import Usuario
+        from django.db.models.functions import TruncMonth
+        from django.db.models import Count, F
+        import json
+
         total = tickets_base.count()
         abiertos = tickets_base.filter(estado__in=['nuevo', 'en_revision', 'en_progreso']).count()
         cerrados = tickets_base.filter(estado='cerrado').count()
         total_usuarios = Usuario.objects.filter(is_active=True).count()
 
-        # Gráfico por estado
         estados = {
             'Nuevo': tickets_base.filter(estado='nuevo').count(),
             'En revisión': tickets_base.filter(estado='en_revision').count(),
@@ -185,16 +189,78 @@ def dashboard(request):
             'Cerrado': tickets_base.filter(estado='cerrado').count(),
         }
 
-        # Gráfico por categoría
-        from .models import Categoria
-        categorias_data = {}
-        for categoria in Categoria.objects.all():
-            categorias_data[categoria.nombre] = tickets_base.filter(categoria=categoria).count()
+        areas_data = {}
+        for area in Area.objects.all():
+            areas_data[area.nombre] = tickets_base.filter(categoria__area=area).count()
 
-        # Últimos tickets creados
+        urgencia = {
+            'Alta': tickets_base.filter(prioridad='alta').count(),
+            'Media': tickets_base.filter(prioridad='media').count(),
+            'Baja': tickets_base.filter(prioridad='baja').count(),
+            'Sin asignar': tickets_base.filter(prioridad__isnull=True).count(),
+        }
+
+        tickets_con_limite = tickets_base.filter(fecha_limite__isnull=False)
+        total_sla = tickets_con_limite.count()
+        cumplieron_sla = tickets_con_limite.filter(
+            estado='cerrado',
+            fecha_cierre__lte=F('fecha_limite')
+        ).count()
+        no_cumplieron_sla = tickets_con_limite.filter(
+            estado='cerrado',
+            fecha_cierre__gt=F('fecha_limite')
+        ).count()
+        expirados_abiertos = tickets_con_limite.filter(
+            estado__in=['nuevo', 'en_revision', 'en_progreso'],
+            fecha_limite__lt=ahora
+        ).count()
+
+        sla = {
+            'Cumplido': cumplieron_sla,
+            'Incumplido': no_cumplieron_sla,
+            'Expirado abierto': expirados_abiertos,
+        }
+
+        porcentaje_sla = round((cumplieron_sla / total_sla * 100), 1) if total_sla > 0 else 0
+
+        creados_por_mes = list(
+            tickets_base
+            .annotate(mes=TruncMonth('fecha_creacion'))
+            .values('mes')
+            .annotate(total=Count('id'))
+            .order_by('mes')[:6]
+        )
+
+        resueltos_por_mes = list(
+            tickets_base.filter(estado='cerrado', fecha_cierre__isnull=False)
+            .annotate(mes=TruncMonth('fecha_cierre'))
+            .values('mes')
+            .annotate(total=Count('id'))
+            .order_by('mes')[:6]
+        )
+
+        meses_labels = [c['mes'].strftime('%b %Y') for c in creados_por_mes if c['mes']]
+        creados_data = [c['total'] for c in creados_por_mes]
+        resueltos_dict = {r['mes'].strftime('%b %Y'): r['total'] for r in resueltos_por_mes if r['mes']}
+        resueltos_data = [resueltos_dict.get(m, 0) for m in meses_labels]
+
+        tecnicos_stats = []
+        for tecnico in Usuario.objects.filter(rol='tecnico', is_active=True):
+            asignados = tickets_base.filter(tecnico=tecnico).count()
+            resueltos = tickets_base.filter(tecnico=tecnico, estado='cerrado').count()
+            if asignados > 0:
+                tecnicos_stats.append({
+                    'nombre': tecnico.get_full_name(),
+                    'asignados': asignados,
+                    'resueltos': resueltos,
+                })
+
+        tecnicos_nombres = json.dumps([t['nombre'] for t in tecnicos_stats])
+        tecnicos_asignados = json.dumps([t['asignados'] for t in tecnicos_stats])
+        tecnicos_resueltos = json.dumps([t['resueltos'] for t in tecnicos_stats])
+
         ultimos_tickets = tickets_base.order_by('-fecha_creacion')[:10]
 
-        # Tickets urgentes
         por_expirar = tickets_base.filter(
             estado__in=['nuevo', 'en_revision', 'en_progreso'],
             fecha_limite__isnull=False,
@@ -220,7 +286,16 @@ def dashboard(request):
             'cerrados': cerrados,
             'total_usuarios': total_usuarios,
             'estados': estados,
-            'categorias_data': categorias_data,
+            'areas_data': areas_data,
+            'urgencia': urgencia,
+            'sla': sla,
+            'porcentaje_sla': porcentaje_sla,
+            'meses_labels': json.dumps(meses_labels),
+            'creados_data': json.dumps(creados_data),
+            'resueltos_data': json.dumps(resueltos_data),
+            'tecnicos_nombres': tecnicos_nombres,
+            'tecnicos_asignados': tecnicos_asignados,
+            'tecnicos_resueltos': tecnicos_resueltos,
             'ultimos_tickets': ultimos_tickets,
             'por_expirar': por_expirar,
             'expirados': expirados,
@@ -275,15 +350,35 @@ def crear_ticket(request):
         form = TicketForm(request.POST)
         formset = AdjuntoFormSet(request.POST, request.FILES)
         if form.is_valid():
-            ticket = form.save(commit=False)
 
-            # Si el técnico crea a nombre de otro usuario
+            extensiones_permitidas = [
+                '.jpg', '.jpeg', '.png', '.gif', '.webp',
+                '.pdf', '.doc', '.docx'
+            ]
+
+            archivo_invalido = False
+            if formset.is_valid():
+                for adjunto_form in formset:
+                    print("cleaned_data:", adjunto_form.cleaned_data)
+                    if adjunto_form.cleaned_data.get('ruta'):
+                        archivo = adjunto_form.cleaned_data['ruta']
+                        print("archivo nombre:", archivo.name)
+                        extension = os.path.splitext(archivo.name)[1].lower()
+                        print("extension:", extension)
+                        if extension not in extensiones_permitidas:
+                            messages.error(request, f'Archivo "{archivo.name}" no permitido. Solo imágenes, PDF y Word.')
+                            archivo_invalido = True
+                            break
+
+            if archivo_invalido:
+                return render(request, 'tickets/crear.html', {'form': form, 'formset': formset})
+
+            ticket = form.save(commit=False)
             crear_a_nombre_de = form.cleaned_data.get('crear_a_nombre_de')
             if request.user.rol == 'tecnico' and crear_a_nombre_de:
                 ticket.creador = crear_a_nombre_de
             else:
                 ticket.creador = request.user
-
             ticket.save()
 
             formset = AdjuntoFormSet(request.POST, request.FILES, instance=ticket)
@@ -296,7 +391,6 @@ def crear_ticket(request):
                         adjunto.tipo_mime = adjunto.ruta.file.content_type if hasattr(adjunto.ruta.file, 'content_type') else 'desconocido'
                         adjunto.save()
 
-            # Si el técnico se autoasigna
             autoasignar = form.cleaned_data.get('autoasignar')
             prioridad_inicial = form.cleaned_data.get('prioridad_inicial')
 
@@ -314,7 +408,6 @@ def crear_ticket(request):
                     usuario=request.user
                 )
 
-            # Maestros etiquetados
             maestros = form.cleaned_data.get('maestros')
             if maestros:
                 for maestro in maestros:
