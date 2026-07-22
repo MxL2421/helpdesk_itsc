@@ -172,8 +172,8 @@ def dashboard(request):
 
     # ── ESTADÍSTICAS ADMINISTRADOR ──────────────────────────────────────────
     if request.user.rol == 'administrador':
-        from django.db.models.functions import TruncMonth
         from django.db.models import Count, F
+        from datetime import datetime
         import json
 
         total = tickets_base.count()
@@ -225,7 +225,7 @@ def dashboard(request):
 
         creados_por_mes = list(
             tickets_base
-            .annotate(mes=TruncMonth('fecha_creacion'))
+            .extra(select={'mes': "DATE_FORMAT(fecha_creacion, '%%Y-%%m')"})
             .values('mes')
             .annotate(total=Count('id'))
             .order_by('mes')[:6]
@@ -233,15 +233,24 @@ def dashboard(request):
 
         resueltos_por_mes = list(
             tickets_base.filter(estado='cerrado', fecha_cierre__isnull=False)
-            .annotate(mes=TruncMonth('fecha_cierre'))
+            .extra(select={'mes': "DATE_FORMAT(fecha_cierre, '%%Y-%%m')"})
             .values('mes')
             .annotate(total=Count('id'))
             .order_by('mes')[:6]
         )
 
-        meses_labels = [c['mes'].strftime('%b %Y') for c in creados_por_mes if c['mes']]
+        meses_labels = []
+        for c in creados_por_mes:
+            if c['mes']:
+                dt = datetime.strptime(c['mes'], '%Y-%m')
+                meses_labels.append(dt.strftime('%b %Y'))
+
         creados_data = [c['total'] for c in creados_por_mes]
-        resueltos_dict = {r['mes'].strftime('%b %Y'): r['total'] for r in resueltos_por_mes if r['mes']}
+        resueltos_dict = {}
+        for r in resueltos_por_mes:
+            if r['mes']:
+                dt = datetime.strptime(r['mes'], '%Y-%m')
+                resueltos_dict[dt.strftime('%b %Y')] = r['total']
         resueltos_data = [resueltos_dict.get(m, 0) for m in meses_labels]
 
         tecnicos_stats = []
