@@ -35,6 +35,16 @@ class CategoriaAdmin(admin.ModelAdmin):
     list_display = ('nombre',)
     search_fields = ('nombre',)
 
+class AreaAdmin(admin.ModelAdmin):
+    list_display = ('nombre',)
+    search_fields = ('nombre',)
+
+class CategoriaAdmin(admin.ModelAdmin):
+    list_display = ('nombre', 'area')
+    list_filter = ('area',)
+    search_fields = ('nombre',)
+
+admin.site.register(Area, AreaAdmin)
 
 admin.site.register(Usuario, UsuarioAdmin)
 admin.site.register(Categoria, CategoriaAdmin)
