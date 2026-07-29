@@ -10,6 +10,24 @@
     <p><strong>Nombre:</strong> {{ user.nombre }} {{ user.apellido }}</p>
     <p><strong>Correo:</strong> {{ user.correo }}</p>
     <p><strong>Rol:</strong> {{ user.get_rol_display }}</p>
+    {% if user.rol == 'tecnico' %}
+<div class="mt-3">
+<strong class="text-sm">Áreas asignadas:</strong>
+
+  {% for area in user.areas.all %}
+<span class="inline-block text-xs font-medium px-3 py-1 rounded-full bg-gray-100 text-gray-700 mr-2 mt-1">
+
+      {{ area.nombre }}
+</span>
+
+  {% empty %}
+<span class="text-sm text-gray-400">Sin áreas asignadas.</span>
+
+  {% endfor %}
+</div>
+
+{% endif %}
+ 
     {% if user.carrera %}
       <p><strong>Carrera:</strong> {{ user.carrera }}</p>
     {% endif %}
