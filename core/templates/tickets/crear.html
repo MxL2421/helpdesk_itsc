@@ -104,32 +104,31 @@
       });
 
   items.forEach((input) => {
-    input.setAttribute('accept', '.jpg,.jpeg,.png,.gif,.webp,.pdf,.doc,.docx');
-    input.addEventListener('change', function () {
-      if (this.files.length > 0) {
-        const archivo = this.files[0];
-        const extension = archivo.name.split('.').pop().toLowerCase();
-        const permitidas = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'pdf', 'doc', 'docx'];
-
-        if (!permitidas.includes(extension)) {
-          alert('Archivo no permitido. Solo se aceptan imágenes, PDF y Word.');
-          this.value = '';
-          document.getElementById('btn-enviar').disabled = true;
-          return;
-        }
-
-        document.getElementById('btn-enviar').disabled = true;
-        visibles++;
-        const nombre = archivo.name;
-        const p = document.createElement('p');
-        p.textContent = `✓ ${nombre}`;
-        listaArchivos.appendChild(p);
-        if (visibles >= items.length) {
-          boton.style.display = 'none';
-        }
+  input.setAttribute('accept', '.jpg,.jpeg,.png,.gif,.webp,.pdf,.doc,.docx');
+  input.addEventListener('change', function () {
+    if (this.files.length > 0) {
+      const archivo = this.files[0];
+      const extension = archivo.name.split('.').pop().toLowerCase();
+      const permitidas = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'pdf', 'doc', 'docx'];
+ 
+      if (!permitidas.includes(extension)) {
+        alert('Archivo no permitido. Solo se aceptan imágenes, PDF y Word.');
+        this.value = '';
+        // NO deshabilitar el botón — el usuario puede enviar sin archivo
+        return;
       }
-    });
+ 
+      visibles++;
+      const nombre = archivo.name;
+      const p = document.createElement('p');
+      p.textContent = `✓ ${nombre}`;
+      listaArchivos.appendChild(p);
+      if (visibles >= items.length) {
+        boton.style.display = 'none';
+      }
+    }
   });
+});
 </script>
 
 
