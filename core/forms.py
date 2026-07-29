@@ -162,6 +162,17 @@ class LoginForm(AuthenticationForm):
 
 # Panel administrativo
 
+CARRERAS_CHOICES = [
+    ('', 'Selecciona una carrera'),
+    ('Técnico en Desarrollo de Software', 'Técnico en Desarrollo de Software'),
+    ('Técnico en Redes y Telecomunicaciones', 'Técnico en Redes y Telecomunicaciones'),
+    ('Técnico en Soporte Técnico', 'Técnico en Soporte Técnico'),
+    ('Técnico en Administración de Empresas', 'Técnico en Administración de Empresas'),
+    ('Técnico en Contabilidad', 'Técnico en Contabilidad'),
+    ('Técnico en Enfermería', 'Técnico en Enfermería'),
+    ('Técnico en Gastronomía', 'Técnico en Gastronomía'),
+]
+
 class CrearUsuarioForm(forms.ModelForm):
     password1 = forms.CharField(
         label='Contraseña',
@@ -186,6 +197,7 @@ class CrearUsuarioForm(forms.ModelForm):
         }
         widgets = {
             'areas': forms.CheckboxSelectMultiple,
+            'carrera': forms.Select(choices=CARRERAS_CHOICES),
         }
 
     def clean_password2(self):
@@ -218,7 +230,6 @@ class CrearUsuarioForm(forms.ModelForm):
             self.save_m2m()
         return user
 
-
 class EditarUsuarioForm(forms.ModelForm):
     class Meta:
         model = Usuario
@@ -235,6 +246,7 @@ class EditarUsuarioForm(forms.ModelForm):
         }
         widgets = {
             'areas': forms.CheckboxSelectMultiple,
+            'carreras': forms.Select(choices=CARRERAS_CHOICES)
         }
 
 

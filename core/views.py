@@ -355,6 +355,8 @@ def dashboard(request):
 
 @login_required
 def crear_ticket(request):
+    categorias = Categoria.objects.select_related('area').all()
+
     if request.method == 'POST':
         form = TicketForm(request.POST)
         formset = AdjuntoFormSet(request.POST, request.FILES)
@@ -368,19 +370,20 @@ def crear_ticket(request):
             archivo_invalido = False
             if formset.is_valid():
                 for adjunto_form in formset:
-                    print("cleaned_data:", adjunto_form.cleaned_data)
                     if adjunto_form.cleaned_data.get('ruta'):
                         archivo = adjunto_form.cleaned_data['ruta']
-                        print("archivo nombre:", archivo.name)
                         extension = os.path.splitext(archivo.name)[1].lower()
-                        print("extension:", extension)
                         if extension not in extensiones_permitidas:
                             messages.error(request, f'Archivo "{archivo.name}" no permitido. Solo imágenes, PDF y Word.')
                             archivo_invalido = True
                             break
 
             if archivo_invalido:
-                return render(request, 'tickets/crear.html', {'form': form, 'formset': formset})
+                return render(request, 'tickets/crear.html', {
+                    'form': form,
+                    'formset': formset,
+                    'categorias': categorias
+                })
 
             ticket = form.save(commit=False)
             crear_a_nombre_de = form.cleaned_data.get('crear_a_nombre_de')
@@ -442,7 +445,11 @@ def crear_ticket(request):
         form = TicketForm()
         formset = AdjuntoFormSet()
 
-    return render(request, 'tickets/crear.html', {'form': form, 'formset': formset})
+    return render(request, 'tickets/crear.html', {
+        'form': form,
+        'formset': formset,
+        'categorias': categorias
+    })
 
 @login_required
 def agregar_adjunto(request, ticket_id):
