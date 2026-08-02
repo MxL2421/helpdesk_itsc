@@ -47,14 +47,16 @@
     if (filaCarr) filaCarr.style.display = 'none';
     if (filaAreas) filaAreas.style.display = 'none';
 
-    // Mostrar según rol
-    if (rol === 'estudiante' || rol === 'maestro') {
-      if (filaMat) filaMat.style.display = '';
-      if (filaCarr) filaCarr.style.display = '';
-    } else if (rol === 'tecnico') {
-      if (filaAreas) filaAreas.style.display = '';
-    }
+  // Mostrar según rol
+  if (rol === 'estudiante') {
+    if (filaMat) filaMat.style.display = '';
+    if (filaCarr) filaCarr.style.display = '';
+  } else if (rol === 'tecnico') {
+    if (filaAreas) filaAreas.style.display = '';
   }
+  }
+
+  // administrador y sin rol: solo nombre, apellido, correo
 
   document.querySelector('[name="rol"]').addEventListener('change', actualizarCampos);
   actualizarCampos();

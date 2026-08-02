@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
-from .models import Usuario, Categoria, Ticket, Area
+from .models import Usuario, Categoria, Ticket, Area, TicketEtiquetado
 
 
 class UsuarioAdmin(UserAdmin):
@@ -29,11 +29,6 @@ class TicketAdmin(admin.ModelAdmin):
     list_filter = ('estado', 'prioridad', 'categoria')
     search_fields = ('titulo',)
 
-admin.site.register(Ticket, TicketAdmin)
-
-class CategoriaAdmin(admin.ModelAdmin):
-    list_display = ('nombre',)
-    search_fields = ('nombre',)
 
 class AreaAdmin(admin.ModelAdmin):
     list_display = ('nombre',)
@@ -44,8 +39,9 @@ class CategoriaAdmin(admin.ModelAdmin):
     list_filter = ('area',)
     search_fields = ('nombre',)
 
+admin.site.register(Ticket, TicketAdmin)
+admin.site.register(TicketEtiquetado)
 admin.site.register(Area, AreaAdmin)
-
 admin.site.register(Usuario, UsuarioAdmin)
 admin.site.register(Categoria, CategoriaAdmin)
 

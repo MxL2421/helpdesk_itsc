@@ -4,387 +4,390 @@
 
 {% if user.rol == 'administrador' %}
 <h1 class="text-2xl font-bold text-gray-800 mb-6">Dashboard</h1>
- 
-<!-- Tarjetas principales -->
-<div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-<div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-<p class="text-xs font-medium text-gray-400 uppercase tracking-wide">Total tickets</p>
-<p class="text-4xl font-bold text-gray-800 mt-1">{{ total }}</p>
+
+<!-- Pestañas -->
+<div class="flex gap-2 mb-6 border-b border-gray-200">
+  <button onclick="mostrarPestana('resumen')" id="tab-resumen"
+    class="tab-btn px-4 py-2 text-sm font-medium border-b-2 border-red-600 text-red-600">
+    Resumen
+  </button>
+  <button onclick="mostrarPestana('graficos')" id="tab-graficos"
+    class="tab-btn px-4 py-2 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700">
+    Gráficos
+  </button>
+  <button onclick="mostrarPestana('tecnicos')" id="tab-tecnicos"
+    class="tab-btn px-4 py-2 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700">
+    Técnicos
+  </button>
+  <button onclick="mostrarPestana('tickets')" id="tab-tickets"
+    class="tab-btn px-4 py-2 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700">
+    Tickets
+  </button>
 </div>
-<div class="bg-white rounded-xl shadow-sm border border-blue-100 p-5">
-<p class="text-xs font-medium text-blue-400 uppercase tracking-wide">Abiertos</p>
-<p class="text-4xl font-bold text-blue-600 mt-1">{{ abiertos }}</p>
+
+<!-- PESTAÑA 1: RESUMEN -->
+<div id="pestana-resumen">
+  <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+      <p class="text-xs font-medium text-gray-400 uppercase tracking-wide">Total tickets</p>
+      <p class="text-4xl font-bold text-gray-800 mt-1">{{ total }}</p>
+    </div>
+    <div class="bg-white rounded-xl shadow-sm border border-blue-100 p-5">
+      <p class="text-xs font-medium text-blue-400 uppercase tracking-wide">Abiertos</p>
+      <p class="text-4xl font-bold text-blue-600 mt-1">{{ abiertos }}</p>
+    </div>
+    <div class="bg-white rounded-xl shadow-sm border border-green-100 p-5">
+      <p class="text-xs font-medium text-green-400 uppercase tracking-wide">Cerrados</p>
+      <p class="text-4xl font-bold text-green-600 mt-1">{{ cerrados }}</p>
+    </div>
+    <div class="bg-white rounded-xl shadow-sm border border-purple-100 p-5">
+      <p class="text-xs font-medium text-purple-400 uppercase tracking-wide">Usuarios activos</p>
+      <p class="text-4xl font-bold text-purple-600 mt-1">{{ total_usuarios }}</p>
+    </div>
+  </div>
+
+  {% if tickets_urgentes %}
+  <div class="bg-white rounded-xl shadow-sm border border-orange-100 p-5 mb-6">
+    <div class="flex items-center gap-2 mb-3">
+      <span class="w-2 h-2 rounded-full bg-orange-500"></span>
+      <h2 class="text-sm font-semibold text-orange-600 uppercase tracking-wide">Tickets por expirar — {{ por_expirar }}</h2>
+    </div>
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="text-xs text-gray-400 uppercase border-b border-gray-100">
+          <th class="pb-2 text-left font-medium">Ticket</th>
+          <th class="pb-2 text-left font-medium">Título</th>
+          <th class="pb-2 text-left font-medium">Prioridad</th>
+          <th class="pb-2 text-left font-medium">Vence</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for ticket in tickets_urgentes %}
+        <tr class="border-b border-gray-50 hover:bg-gray-50 cursor-pointer" data-url="{% url 'detalle_ticket' ticket.id %}">
+          <td class="py-2 text-gray-500">#{{ ticket.id }}</td>
+          <td class="py-2 text-gray-800 font-medium">{{ ticket.titulo }}</td>
+          <td class="py-2">
+            {% if ticket.prioridad == 'alta' %}
+              <span class="px-2 py-0.5 text-xs rounded-full bg-red-100 text-red-700">Alta</span>
+            {% elif ticket.prioridad == 'media' %}
+              <span class="px-2 py-0.5 text-xs rounded-full bg-yellow-100 text-yellow-700">Media</span>
+            {% else %}
+              <span class="px-2 py-0.5 text-xs rounded-full bg-blue-100 text-blue-700">Baja</span>
+            {% endif %}
+          </td>
+          <td class="py-2 {% if ticket.fecha_limite < ahora %}text-red-600 font-semibold{% else %}text-orange-500{% endif %}">
+            {{ ticket.fecha_limite|date:"d/m/Y H:i" }}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="bg-white rounded-xl shadow-sm border border-green-100 p-5 mb-6">
+    <p class="text-green-600 text-sm">✅ No hay tickets próximos a expirar.</p>
+  </div>
+  {% endif %}
 </div>
-<div class="bg-white rounded-xl shadow-sm border border-green-100 p-5">
-<p class="text-xs font-medium text-green-400 uppercase tracking-wide">Cerrados</p>
-<p class="text-4xl font-bold text-green-600 mt-1">{{ cerrados }}</p>
-</div>
-<div class="bg-white rounded-xl shadow-sm border border-purple-100 p-5">
-<p class="text-xs font-medium text-purple-400 uppercase tracking-wide">Usuarios activos</p>
-<p class="text-4xl font-bold text-purple-600 mt-1">{{ total_usuarios }}</p>
-</div>
-</div>
- 
-<!-- Fila 1: Estado y Urgencia -->
-<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
- 
+
+<!-- PESTAÑA 2: GRÁFICOS -->
+<div id="pestana-graficos" class="hidden">
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+      <h2 class="text-sm font-semibold text-gray-600 mb-4 uppercase tracking-wide">Tickets por estado</h2>
+      <div style="height: 180px;"><canvas id="graficoEstados"></canvas></div>
+    </div>
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+      <h2 class="text-sm font-semibold text-gray-600 mb-4 uppercase tracking-wide">Nivel de urgencia</h2>
+      <div style="height: 180px;"><canvas id="graficoUrgencia"></canvas></div>
+    </div>
+  </div>
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+      <h2 class="text-sm font-semibold text-gray-600 mb-4 uppercase tracking-wide">Creados vs Resueltos</h2>
+      <div style="height: 180px;"><canvas id="graficoComparativa"></canvas></div>
+    </div>
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-sm font-semibold text-gray-600 uppercase tracking-wide">Cumplimiento de SLA</h2>
+        <span class="text-2xl font-bold {% if porcentaje_sla >= 80 %}text-green-600{% elif porcentaje_sla >= 50 %}text-yellow-500{% else %}text-red-600{% endif %}">
+          {{ porcentaje_sla }}%
+        </span>
+      </div>
+      <div style="height: 180px;"><canvas id="graficoSLA"></canvas></div>
+    </div>
+  </div>
   <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-<h2 class="text-sm font-semibold text-gray-600 mb-4 uppercase tracking-wide">Tickets por estado</h2>
-<div style="height: 180px;"><canvas id="graficoEstados"></canvas></div>
+    <h2 class="text-sm font-semibold text-gray-600 mb-4 uppercase tracking-wide">Tickets por área</h2>
+    <div style="height: 180px;"><canvas id="graficoAreas"></canvas></div>
+  </div>
 </div>
- 
+
+<!-- PESTAÑA 3: TÉCNICOS -->
+<div id="pestana-tecnicos" class="hidden">
   <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-<h2 class="text-sm font-semibold text-gray-600 mb-4 uppercase tracking-wide">Nivel de urgencia</h2>
-<div style="height: 180px;"><canvas id="graficoUrgencia"></canvas></div>
+    <h2 class="text-sm font-semibold text-gray-600 mb-4 uppercase tracking-wide">Asignados vs Resueltos por técnico</h2>
+    <div style="height: 180px;"><canvas id="graficoTecnicos"></canvas></div>
+  </div>
 </div>
- 
-</div>
- 
-<!-- Fila 2: Comparativa y SLA -->
-<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
- 
+
+<!-- PESTAÑA 4: TICKETS -->
+<div id="pestana-tickets" class="hidden">
   <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-<h2 class="text-sm font-semibold text-gray-600 mb-4 uppercase tracking-wide">Creados vs Resueltos</h2>
-<div style="height: 180px;"><canvas id="graficoComparativa"></canvas></div>
+    <h2 class="text-sm font-semibold text-gray-600 mb-4 uppercase tracking-wide">Últimos tickets creados</h2>
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="text-xs text-gray-400 uppercase border-b border-gray-100">
+          <th class="pb-2 text-left font-medium">ID</th>
+          <th class="pb-2 text-left font-medium">Título</th>
+          <th class="pb-2 text-left font-medium">Categoría</th>
+          <th class="pb-2 text-left font-medium">Estado</th>
+          <th class="pb-2 text-left font-medium">Creador</th>
+          <th class="pb-2 text-left font-medium">Fecha</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for ticket in ultimos_tickets %}
+        <tr class="border-b border-gray-50 hover:bg-gray-50 cursor-pointer" data-url="{% url 'detalle_ticket' ticket.id %}">
+          <td class="py-2 text-gray-400">#{{ ticket.id }}</td>
+          <td class="py-2 text-gray-800 font-medium">{{ ticket.titulo }}</td>
+          <td class="py-2 text-gray-500">{{ ticket.categoria }}</td>
+          <td class="py-2">
+            {% if ticket.estado == 'cerrado' %}
+              <span class="px-2 py-0.5 text-xs rounded-full bg-gray-100 text-gray-600">{{ ticket.get_estado_display }}</span>
+            {% elif ticket.estado == 'en_progreso' %}
+              <span class="px-2 py-0.5 text-xs rounded-full bg-yellow-100 text-yellow-700">{{ ticket.get_estado_display }}</span>
+            {% else %}
+              <span class="px-2 py-0.5 text-xs rounded-full bg-green-100 text-green-700">{{ ticket.get_estado_display }}</span>
+            {% endif %}
+          </td>
+          <td class="py-2 text-gray-500">{{ ticket.creador.get_full_name }}</td>
+          <td class="py-2 text-gray-400">{{ ticket.fecha_creacion|date:"d/m/Y H:i" }}</td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="6" class="py-4 text-center text-gray-400">No hay tickets creados.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
 </div>
- 
-  <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-<div class="flex items-center justify-between mb-4">
-<h2 class="text-sm font-semibold text-gray-600 uppercase tracking-wide">Cumplimiento de SLA</h2>
-<span class="text-2xl font-bold {% if porcentaje_sla >= 80 %}text-green-600{% elif porcentaje_sla >= 50 %}text-yellow-500{% else %}text-red-600{% endif %}">
-        {{ porcentaje_sla }}%
-</span>
-</div>
-<div style="height: 180px;"><canvas id="graficoSLA"></canvas></div>
-</div>
- 
-</div>
- 
-<!-- Fila 3: Tickets por área y técnicos -->
-<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
- 
-  <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-<h2 class="text-sm font-semibold text-gray-600 mb-4 uppercase tracking-wide">Tickets por área</h2>
-<div style="height: 180px;"><canvas id="graficoAreas"></canvas></div>
-</div>
- 
-  <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-<h2 class="text-sm font-semibold text-gray-600 mb-4 uppercase tracking-wide">Asignados vs Resueltos por técnico</h2>
-<div style="height: 180px;"><canvas id="graficoTecnicos"></canvas></div>
-</div>
- 
-</div>
- 
-<!-- Tickets urgentes -->
-{% if tickets_urgentes %}
-<div class="bg-white rounded-xl shadow-sm border border-orange-100 p-5 mb-6">
-<div class="flex items-center gap-2 mb-3">
-<span class="w-2 h-2 rounded-full bg-orange-500"></span>
-<h2 class="text-sm font-semibold text-orange-600 uppercase tracking-wide">Tickets por expirar — {{ por_expirar }}</h2>
-</div>
-<table class="w-full text-sm">
-<thead>
-<tr class="text-xs text-gray-400 uppercase border-b border-gray-100">
-<th class="pb-2 text-left font-medium">Ticket</th>
-<th class="pb-2 text-left font-medium">Título</th>
-<th class="pb-2 text-left font-medium">Prioridad</th>
-<th class="pb-2 text-left font-medium">Vence</th>
-</tr>
-</thead>
-<tbody>
-      {% for ticket in tickets_urgentes %}
-<tr class="border-b border-gray-50 hover:bg-gray-50 cursor-pointer" data-url="{% url 'detalle_ticket' ticket.id %}">
-<td class="py-2 text-gray-500">#{{ ticket.id }}</td>
-<td class="py-2 text-gray-800 font-medium">{{ ticket.titulo }}</td>
-<td class="py-2">
-          {% if ticket.prioridad == 'alta' %}
-<span class="px-2 py-0.5 text-xs rounded-full bg-red-100 text-red-700">Alta</span>
-          {% elif ticket.prioridad == 'media' %}
-<span class="px-2 py-0.5 text-xs rounded-full bg-yellow-100 text-yellow-700">Media</span>
-          {% else %}
-<span class="px-2 py-0.5 text-xs rounded-full bg-blue-100 text-blue-700">Baja</span>
-          {% endif %}
-</td>
-<td class="py-2 {% if ticket.fecha_limite < ahora %}text-red-600 font-semibold{% else %}text-orange-500{% endif %}">
-          {{ ticket.fecha_limite|date:"d/m/Y H:i" }}
-</td>
-</tr>
-      {% endfor %}
-</tbody>
-</table>
-</div>
-{% endif %}
- 
-<!-- Últimos tickets -->
-<div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-<h2 class="text-sm font-semibold text-gray-600 mb-4 uppercase tracking-wide">Últimos tickets creados</h2>
-<table class="w-full text-sm">
-<thead>
-<tr class="text-xs text-gray-400 uppercase border-b border-gray-100">
-<th class="pb-2 text-left font-medium">ID</th>
-<th class="pb-2 text-left font-medium">Título</th>
-<th class="pb-2 text-left font-medium">Categoría</th>
-<th class="pb-2 text-left font-medium">Estado</th>
-<th class="pb-2 text-left font-medium">Creador</th>
-<th class="pb-2 text-left font-medium">Fecha</th>
-</tr>
-</thead>
-<tbody>
-      {% for ticket in ultimos_tickets %}
-<tr class="border-b border-gray-50 hover:bg-gray-50 cursor-pointer" data-url="{% url 'detalle_ticket' ticket.id %}">
-<td class="py-2 text-gray-400">#{{ ticket.id }}</td>
-<td class="py-2 text-gray-800 font-medium">{{ ticket.titulo }}</td>
-<td class="py-2 text-gray-500">{{ ticket.categoria }}</td>
-<td class="py-2">
-          {% if ticket.estado == 'cerrado' %}
-<span class="px-2 py-0.5 text-xs rounded-full bg-gray-100 text-gray-600">{{ ticket.get_estado_display }}</span>
-          {% elif ticket.estado == 'en_progreso' %}
-<span class="px-2 py-0.5 text-xs rounded-full bg-yellow-100 text-yellow-700">{{ ticket.get_estado_display }}</span>
-          {% else %}
-<span class="px-2 py-0.5 text-xs rounded-full bg-green-100 text-green-700">{{ ticket.get_estado_display }}</span>
-          {% endif %}
-</td>
-<td class="py-2 text-gray-500">{{ ticket.creador.get_full_name }}</td>
-<td class="py-2 text-gray-400">{{ ticket.fecha_creacion|date:"d/m/Y H:i" }}</td>
-</tr>
-      {% empty %}
-<tr>
-<td colspan="6" class="py-4 text-center text-gray-400">No hay tickets creados.</td>
-</tr>
-      {% endfor %}
-</tbody>
-</table>
-</div>
- 
+
 <!-- Chart.js -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
   Chart.defaults.font.family = "'Inter', 'Helvetica', sans-serif";
   Chart.defaults.color = '#6B7280';
- 
+
   const colores = {
-    rojo: '#DC2626',
-    azul: '#3B82F6',
-    verde: '#10B981',
-    amarillo: '#F59E0B',
-    gris: '#9CA3AF',
-    morado: '#8B5CF6',
-    naranja: '#F97316',
+    rojo: '#DC2626', azul: '#3B82F6', verde: '#10B981',
+    amarillo: '#F59E0B', gris: '#9CA3AF', naranja: '#F97316',
   };
- 
-  // Gráfico por estado (Doughnut)
-  new Chart(document.getElementById('graficoEstados'), {
-    type: 'doughnut',
-    data: {
-      labels: [{% for k, v in estados.items %}'{{ k }}',{% endfor %}],
-      datasets: [{
-        data: [{% for k, v in estados.items %}{{ v }},{% endfor %}],
-        backgroundColor: [colores.azul, colores.amarillo, colores.naranja, colores.gris, colores.verde],
-        borderWidth: 0,
-        hoverOffset: 6,
-      }]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      cutout: '65%',
-      plugins: {
-        legend: { position: 'bottom', labels: { padding: 16, usePointStyle: true, pointStyle: 'circle' } }
-      }
+
+  let graficosInicializados = false;
+  let tecnicosInicializado = false;
+
+  function mostrarPestana(nombre) {
+    const pestanas = ['resumen', 'graficos', 'tecnicos', 'tickets'];
+    pestanas.forEach(p => {
+      document.getElementById(`pestana-${p}`).classList.add('hidden');
+      const tab = document.getElementById(`tab-${p}`);
+      tab.classList.remove('border-red-600', 'text-red-600');
+      tab.classList.add('border-transparent', 'text-gray-500');
+    });
+    document.getElementById(`pestana-${nombre}`).classList.remove('hidden');
+    const tabActivo = document.getElementById(`tab-${nombre}`);
+    tabActivo.classList.add('border-red-600', 'text-red-600');
+    tabActivo.classList.remove('border-transparent', 'text-gray-500');
+
+    if (nombre === 'graficos' && !graficosInicializados) {
+      inicializarGraficos();
+      graficosInicializados = true;
     }
-  });
- 
-  // Gráfico urgencia (Doughnut)
-  new Chart(document.getElementById('graficoUrgencia'), {
-    type: 'doughnut',
-    data: {
-      labels: [{% for k, v in urgencia.items %}'{{ k }}',{% endfor %}],
-      datasets: [{
-        data: [{% for k, v in urgencia.items %}{{ v }},{% endfor %}],
-        backgroundColor: [colores.rojo, colores.amarillo, colores.azul, colores.gris],
-        borderWidth: 0,
-        hoverOffset: 6,
-      }]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      cutout: '65%',
-      plugins: {
-        legend: { position: 'bottom', labels: { padding: 16, usePointStyle: true, pointStyle: 'circle' } }
-      }
+    if (nombre === 'tecnicos' && !tecnicosInicializado) {
+      inicializarGraficoTecnicos();
+      tecnicosInicializado = true;
     }
-  });
- 
-  // Gráfico comparativa creados vs resueltos (Line)
-  new Chart(document.getElementById('graficoComparativa'), {
-    type: 'line',
-    data: {
-      labels: {{ meses_labels|safe }},
-      datasets: [
-        {
-          label: 'Creados',
-          data: {{ creados_data|safe }},
-          borderColor: colores.azul,
-          backgroundColor: 'rgba(59,130,246,0.1)',
-          fill: true,
-          tension: 0.4,
-          pointRadius: 4,
-          pointBackgroundColor: colores.azul,
-        },
-        {
-          label: 'Resueltos',
-          data: {{ resueltos_data|safe }},
-          borderColor: colores.verde,
-          backgroundColor: 'rgba(16,185,129,0.1)',
-          fill: true,
-          tension: 0.4,
-          pointRadius: 4,
-          pointBackgroundColor: colores.verde,
-        }
-      ]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: { position: 'bottom', labels: { padding: 16, usePointStyle: true, pointStyle: 'circle' } }
+  }
+
+  function inicializarGraficos() {
+    new Chart(document.getElementById('graficoEstados'), {
+      type: 'doughnut',
+      data: {
+        labels: [{% for k, v in estados.items %}'{{ k }}',{% endfor %}],
+        datasets: [{ data: [{% for k, v in estados.items %}{{ v }},{% endfor %}], backgroundColor: [colores.azul, colores.amarillo, colores.naranja, colores.gris, colores.verde], borderWidth: 0, hoverOffset: 6 }]
       },
-      scales: {
-        y: { beginAtZero: true, ticks: { stepSize: 1 }, grid: { color: '#F3F4F6' } },
-        x: { grid: { display: false } }
-      }
-    }
-  });
- 
-  // Gráfico SLA (Doughnut)
-  new Chart(document.getElementById('graficoSLA'), {
-    type: 'doughnut',
-    data: {
-      labels: [{% for k, v in sla.items %}'{{ k }}',{% endfor %}],
-      datasets: [{
-        data: [{% for k, v in sla.items %}{{ v }},{% endfor %}],
-        backgroundColor: [colores.verde, colores.rojo, colores.amarillo],
-        borderWidth: 0,
-        hoverOffset: 6,
-      }]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      cutout: '65%',
-      plugins: {
-        legend: { position: 'bottom', labels: { padding: 16, usePointStyle: true, pointStyle: 'circle' } }
-      }
-    }
-  });
- 
-  // Gráfico por área (Bar horizontal)
-  new Chart(document.getElementById('graficoAreas'), {
-    type: 'bar',
-    data: {
-      labels: [{% for k, v in areas_data.items %}'{{ k }}',{% endfor %}],
-      datasets: [{
-        label: 'Tickets',
-        data: [{% for k, v in areas_data.items %}{{ v }},{% endfor %}],
-        backgroundColor: 'rgba(220,38,38,0.8)',
-        borderRadius: 6,
-        borderSkipped: false,
-      }]
-    },
-    options: {
-      indexAxis: 'y',
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: { legend: { display: false } },
-      scales: {
-        x: { beginAtZero: true, ticks: { stepSize: 1 }, grid: { color: '#F3F4F6' } },
-        y: { grid: { display: false } }
-      }
-    }
-  });
- 
-  // Gráfico técnicos asignados vs resueltos (Bar agrupado)
-  new Chart(document.getElementById('graficoTecnicos'), {
-    type: 'bar',
-    data: {
-      labels: {{ tecnicos_nombres|safe }},
-      datasets: [
-        {
-          label: 'Asignados',
-          data: {{ tecnicos_asignados|safe }},
-          backgroundColor: 'rgba(59,130,246,0.8)',
-          borderRadius: 4,
-        },
-        {
-          label: 'Resueltos',
-          data: {{ tecnicos_resueltos|safe }},
-          backgroundColor: 'rgba(16,185,129,0.8)',
-          borderRadius: 4,
-        }
-      ]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: { position: 'bottom', labels: { padding: 16, usePointStyle: true, pointStyle: 'circle' } }
+      options: { responsive: true, maintainAspectRatio: false, cutout: '65%', plugins: { legend: { position: 'bottom', labels: { padding: 16, usePointStyle: true, pointStyle: 'circle' } } } }
+    });
+
+    new Chart(document.getElementById('graficoUrgencia'), {
+      type: 'doughnut',
+      data: {
+        labels: [{% for k, v in urgencia.items %}'{{ k }}',{% endfor %}],
+        datasets: [{ data: [{% for k, v in urgencia.items %}{{ v }},{% endfor %}], backgroundColor: [colores.rojo, colores.amarillo, colores.azul, colores.gris], borderWidth: 0, hoverOffset: 6 }]
       },
-      scales: {
-        y: { beginAtZero: true, ticks: { stepSize: 1 }, grid: { color: '#F3F4F6' } },
-        x: { grid: { display: false } }
-      }
-    }
-  });
- 
-  // Filas clickeables
+      options: { responsive: true, maintainAspectRatio: false, cutout: '65%', plugins: { legend: { position: 'bottom', labels: { padding: 16, usePointStyle: true, pointStyle: 'circle' } } } }
+    });
+
+    new Chart(document.getElementById('graficoComparativa'), {
+      type: 'line',
+      data: {
+        labels: {{ meses_labels|safe }},
+        datasets: [
+          { label: 'Creados', data: {{ creados_data|safe }}, borderColor: colores.azul, backgroundColor: 'rgba(59,130,246,0.1)', fill: true, tension: 0.4, pointRadius: 4, pointBackgroundColor: colores.azul },
+          { label: 'Resueltos', data: {{ resueltos_data|safe }}, borderColor: colores.verde, backgroundColor: 'rgba(16,185,129,0.1)', fill: true, tension: 0.4, pointRadius: 4, pointBackgroundColor: colores.verde }
+        ]
+      },
+      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { padding: 16, usePointStyle: true, pointStyle: 'circle' } } }, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 }, grid: { color: '#F3F4F6' } }, x: { grid: { display: false } } } }
+    });
+
+    new Chart(document.getElementById('graficoSLA'), {
+      type: 'doughnut',
+      data: {
+        labels: [{% for k, v in sla.items %}'{{ k }}',{% endfor %}],
+        datasets: [{ data: [{% for k, v in sla.items %}{{ v }},{% endfor %}], backgroundColor: [colores.verde, colores.rojo, colores.amarillo], borderWidth: 0, hoverOffset: 6 }]
+      },
+      options: { responsive: true, maintainAspectRatio: false, cutout: '65%', plugins: { legend: { position: 'bottom', labels: { padding: 16, usePointStyle: true, pointStyle: 'circle' } } } }
+    });
+
+    new Chart(document.getElementById('graficoAreas'), {
+      type: 'bar',
+      data: {
+        labels: [{% for k, v in areas_data.items %}'{{ k }}',{% endfor %}],
+        datasets: [{ label: 'Tickets', data: [{% for k, v in areas_data.items %}{{ v }},{% endfor %}], backgroundColor: 'rgba(220,38,38,0.8)', borderRadius: 6, borderSkipped: false }]
+      },
+      options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { beginAtZero: true, ticks: { stepSize: 1 }, grid: { color: '#F3F4F6' } }, y: { grid: { display: false } } } }
+    });
+  }
+
+  function inicializarGraficoTecnicos() {
+    new Chart(document.getElementById('graficoTecnicos'), {
+      type: 'bar',
+      data: {
+        labels: {{ tecnicos_nombres|safe }},
+        datasets: [
+          { label: 'Asignados', data: {{ tecnicos_asignados|safe }}, backgroundColor: 'rgba(59,130,246,0.8)', borderRadius: 4 },
+          { label: 'Resueltos', data: {{ tecnicos_resueltos|safe }}, backgroundColor: 'rgba(16,185,129,0.8)', borderRadius: 4 }
+        ]
+      },
+      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { padding: 16, usePointStyle: true, pointStyle: 'circle' } } }, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 }, grid: { color: '#F3F4F6' } }, x: { grid: { display: false } } } }
+    });
+  }
+
   document.querySelectorAll('tr[data-url]').forEach(row => {
     row.addEventListener('click', () => { window.location = row.dataset.url; });
   });
 </script>
 {% else %}
 
-<!-- DASHBOARD TÉCNICO  -->
-<h1 class="text-center text-red-500 font-semibold mb-6">Mis Tickets Asignados</h1>
+<!-- DASHBOARD TÉCNICO -->
+<h1 class="text-2xl font-bold text-gray-800 mb-6">Mis Tickets Asignados</h1>
 
+<!-- Tarjetas -->
 <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-  <div class="bg-white border border-gray-200 rounded-lg p-4 text-center shadow-sm">
-    <p class="text-3xl font-bold text-gray-800">{{ total }}</p>
-    <p class="text-sm text-gray-500 mt-1">Mis tickets</p>
+  <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+    <p class="text-xs font-medium text-gray-400 uppercase tracking-wide">Mis tickets</p>
+    <p class="text-4xl font-bold text-gray-800 mt-1">{{ total }}</p>
   </div>
-  <div class="bg-white border border-blue-200 rounded-lg p-4 text-center shadow-sm">
-    <p class="text-3xl font-bold text-blue-600">{{ pendientes }}</p>
-    <p class="text-sm text-gray-500 mt-1">Pendientes</p>
+  <div class="bg-white rounded-xl shadow-sm border border-blue-100 p-5">
+    <p class="text-xs font-medium text-blue-400 uppercase tracking-wide">Pendientes</p>
+    <p class="text-4xl font-bold text-blue-600 mt-1">{{ pendientes }}</p>
   </div>
-  <div class="bg-white border border-yellow-200 rounded-lg p-4 text-center shadow-sm">
-    <p class="text-3xl font-bold text-yellow-600">{{ en_progreso }}</p>
-    <p class="text-sm text-gray-500 mt-1">En progreso</p>
+  <div class="bg-white rounded-xl shadow-sm border border-yellow-100 p-5">
+    <p class="text-xs font-medium text-yellow-400 uppercase tracking-wide">En progreso</p>
+    <p class="text-4xl font-bold text-yellow-600 mt-1">{{ en_progreso }}</p>
   </div>
-  <div class="bg-white border border-green-200 rounded-lg p-4 text-center shadow-sm">
-    <p class="text-3xl font-bold text-green-600">{{ cerrados_por_mi }}</p>
-    <p class="text-sm text-gray-500 mt-1">Cerrados por mí</p>
+  <div class="bg-white rounded-xl shadow-sm border border-green-100 p-5">
+    <p class="text-xs font-medium text-green-400 uppercase tracking-wide">Cerrados por mí</p>
+    <p class="text-4xl font-bold text-green-600 mt-1">{{ cerrados_por_mi }}</p>
   </div>
 </div>
 
+<!-- Progreso y gráfico de prioridad -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+
+  <!-- Barra de progreso -->
+  <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+    <h2 class="text-sm font-semibold text-gray-600 mb-4 uppercase tracking-wide">Progreso de resolución</h2>
+    <div class="flex items-end gap-3 mb-2">
+      <span class="text-5xl font-bold {% if porcentaje_resolucion >= 80 %}text-green-600{% elif porcentaje_resolucion >= 50 %}text-yellow-500{% else %}text-red-600{% endif %}">
+        {{ porcentaje_resolucion }}%
+      </span>
+      <span class="text-sm text-gray-400 mb-2">de tickets resueltos</span>
+    </div>
+    <div class="w-full bg-gray-100 rounded-full h-4">
+      <div class="h-4 rounded-full {% if porcentaje_resolucion >= 80 %}bg-green-500{% elif porcentaje_resolucion >= 50 %}bg-yellow-400{% else %}bg-red-500{% endif %}"
+        style="width: {{ porcentaje_resolucion }}%">
+      </div>
+    </div>
+    <div class="flex justify-between text-xs text-gray-400 mt-1">
+      <span>0%</span>
+      <span>100%</span>
+    </div>
+
+    {% if ticket_mas_antiguo %}
+    <div class="mt-5 border-t border-gray-100 pt-4">
+      <p class="text-xs font-medium text-gray-400 uppercase tracking-wide mb-2">Ticket más antiguo sin resolver</p>
+      <a href="{% url 'detalle_ticket' ticket_mas_antiguo.id %}"
+        class="flex items-center justify-between hover:bg-gray-50 rounded-lg p-2 transition">
+        <div>
+          <p class="text-sm font-medium text-gray-800">#{{ ticket_mas_antiguo.id }} — {{ ticket_mas_antiguo.titulo }}</p>
+          <p class="text-xs text-gray-400 mt-0.5">Creado: {{ ticket_mas_antiguo.fecha_creacion|date:"d/m/Y H:i" }}</p>
+        </div>
+        {% if ticket_mas_antiguo.prioridad == 'alta' %}
+          <span class="px-2 py-0.5 text-xs rounded-full bg-red-100 text-red-700">Alta</span>
+        {% elif ticket_mas_antiguo.prioridad == 'media' %}
+          <span class="px-2 py-0.5 text-xs rounded-full bg-yellow-100 text-yellow-700">Media</span>
+        {% elif ticket_mas_antiguo.prioridad == 'baja' %}
+          <span class="px-2 py-0.5 text-xs rounded-full bg-blue-100 text-blue-700">Baja</span>
+        {% else %}
+          <span class="px-2 py-0.5 text-xs rounded-full bg-gray-100 text-gray-500">Sin prioridad</span>
+        {% endif %}
+      </a>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Gráfico por prioridad -->
+  <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+    <h2 class="text-sm font-semibold text-gray-600 mb-4 uppercase tracking-wide">Mis tickets por prioridad</h2>
+    <div style="height: 200px;"><canvas id="graficoPrioridad"></canvas></div>
+  </div>
+
+</div>
+
+<!-- Tickets urgentes -->
 {% if tickets_urgentes %}
-<div class="bg-white border border-orange-200 rounded-lg p-4 mb-6 shadow-sm">
-  <h2 class="font-semibold text-orange-600 mb-3">⚠️ Mis tickets por expirar — {{ por_expirar }}</h2>
+<div class="bg-white rounded-xl shadow-sm border border-orange-100 p-5 mb-6">
+  <div class="flex items-center gap-2 mb-3">
+    <span class="w-2 h-2 rounded-full bg-orange-500"></span>
+    <h2 class="text-sm font-semibold text-orange-600 uppercase tracking-wide">Tickets urgentes — {{ por_expirar }}</h2>
+  </div>
   <table class="w-full text-sm">
-    <thead class="bg-gray-100">
-      <tr>
-        <th class="p-2 text-left">Ticket</th>
-        <th class="p-2 text-left">Título</th>
-        <th class="p-2 text-left">Prioridad</th>
-        <th class="p-2 text-left">Vence</th>
+    <thead>
+      <tr class="text-xs text-gray-400 uppercase border-b border-gray-100">
+        <th class="pb-2 text-left font-medium">Ticket</th>
+        <th class="pb-2 text-left font-medium">Título</th>
+        <th class="pb-2 text-left font-medium">Prioridad</th>
+        <th class="pb-2 text-left font-medium">Vence</th>
       </tr>
     </thead>
     <tbody>
       {% for ticket in tickets_urgentes %}
-      <tr class="border-t hover:bg-gray-50 cursor-pointer" data-url="{% url 'detalle_ticket' ticket.id %}">
-        <td class="p-2">#{{ ticket.id }}</td>
-        <td class="p-2">{{ ticket.titulo }}</td>
-        <td class="p-2">{{ ticket.get_prioridad_display }}</td>
-        <td class="p-2 {% if ticket.fecha_limite < ahora %}text-red-600 font-semibold{% else %}text-orange-500{% endif %}">
+      <tr class="border-b border-gray-50 hover:bg-gray-50 cursor-pointer" data-url="{% url 'detalle_ticket' ticket.id %}">
+        <td class="py-2 text-gray-500">#{{ ticket.id }}</td>
+        <td class="py-2 text-gray-800 font-medium">{{ ticket.titulo }}</td>
+        <td class="py-2">
+          {% if ticket.prioridad == 'alta' %}
+            <span class="px-2 py-0.5 text-xs rounded-full bg-red-100 text-red-700">Alta</span>
+          {% elif ticket.prioridad == 'media' %}
+            <span class="px-2 py-0.5 text-xs rounded-full bg-yellow-100 text-yellow-700">Media</span>
+          {% else %}
+            <span class="px-2 py-0.5 text-xs rounded-full bg-blue-100 text-blue-700">Baja</span>
+          {% endif %}
+        </td>
+        <td class="py-2 {% if ticket.fecha_limite < ahora %}text-red-600 font-semibold{% else %}text-orange-500{% endif %}">
           {{ ticket.fecha_limite|date:"d/m/Y H:i" }}
         </td>
       </tr>
@@ -394,41 +397,74 @@
 </div>
 {% endif %}
 
-<div class="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
-  <h2 class="text-sm font-semibold text-gray-700 mb-3">Mis últimos tickets asignados</h2>
+<!-- Últimos tickets -->
+<div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+  <h2 class="text-sm font-semibold text-gray-600 mb-4 uppercase tracking-wide">Mis últimos tickets asignados</h2>
   <table class="w-full text-sm">
-    <thead class="bg-gray-100">
-      <tr>
-        <th class="p-2 text-left">Ticket</th>
-        <th class="p-2 text-left">Título</th>
-        <th class="p-2 text-left">Categoría</th>
-        <th class="p-2 text-left">Estado</th>
-        <th class="p-2 text-left">Prioridad</th>
-        <th class="p-2 text-left">Vence</th>
+    <thead>
+      <tr class="text-xs text-gray-400 uppercase border-b border-gray-100">
+        <th class="pb-2 text-left font-medium">ID</th>
+        <th class="pb-2 text-left font-medium">Título</th>
+        <th class="pb-2 text-left font-medium">Categoría</th>
+        <th class="pb-2 text-left font-medium">Estado</th>
+        <th class="pb-2 text-left font-medium">Prioridad</th>
+        <th class="pb-2 text-left font-medium">Vence</th>
       </tr>
     </thead>
     <tbody>
       {% for ticket in ultimos_tickets %}
-      <tr class="border-t hover:bg-gray-50 cursor-pointer" data-url="{% url 'detalle_ticket' ticket.id %}">
-        <td class="p-2">#{{ ticket.id }}</td>
-        <td class="p-2">{{ ticket.titulo }}</td>
-        <td class="p-2">{{ ticket.categoria }}</td>
-        <td class="p-2">{{ ticket.get_estado_display }}</td>
-        <td class="p-2">{{ ticket.prioridad|default:"Sin asignar" }}</td>
-        <td class="p-2 {% if ticket.fecha_limite and ticket.fecha_limite < ahora %}text-red-600{% endif %}">
+      <tr class="border-b border-gray-50 hover:bg-gray-50 cursor-pointer" data-url="{% url 'detalle_ticket' ticket.id %}">
+        <td class="py-2 text-gray-400">#{{ ticket.id }}</td>
+        <td class="py-2 text-gray-800 font-medium">{{ ticket.titulo }}</td>
+        <td class="py-2 text-gray-500">{{ ticket.categoria }}</td>
+        <td class="py-2">
+          {% if ticket.estado == 'cerrado' %}
+            <span class="px-2 py-0.5 text-xs rounded-full bg-gray-100 text-gray-600">{{ ticket.get_estado_display }}</span>
+          {% elif ticket.estado == 'en_progreso' %}
+            <span class="px-2 py-0.5 text-xs rounded-full bg-yellow-100 text-yellow-700">{{ ticket.get_estado_display }}</span>
+          {% else %}
+            <span class="px-2 py-0.5 text-xs rounded-full bg-green-100 text-green-700">{{ ticket.get_estado_display }}</span>
+          {% endif %}
+        </td>
+        <td class="py-2">{{ ticket.prioridad|default:"Sin asignar" }}</td>
+        <td class="py-2 {% if ticket.fecha_limite and ticket.fecha_limite < ahora %}text-red-600{% endif %}">
           {{ ticket.fecha_limite|date:"d/m/Y H:i"|default:"—" }}
         </td>
       </tr>
       {% empty %}
       <tr>
-        <td colspan="6" class="p-4 text-center text-gray-400 text-sm">No tienes tickets asignados.</td>
+        <td colspan="6" class="py-4 text-center text-gray-400">No tienes tickets asignados.</td>
       </tr>
       {% endfor %}
     </tbody>
   </table>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
+  const prioridadData = {{ prioridad_data|safe }};
+
+  new Chart(document.getElementById('graficoPrioridad'), {
+    type: 'doughnut',
+    data: {
+      labels: Object.keys(prioridadData),
+      datasets: [{
+        data: Object.values(prioridadData),
+        backgroundColor: ['#DC2626', '#F59E0B', '#3B82F6', '#9CA3AF'],
+        borderWidth: 0,
+        hoverOffset: 6,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      cutout: '65%',
+      plugins: {
+        legend: { position: 'bottom', labels: { padding: 16, usePointStyle: true, pointStyle: 'circle' } }
+      }
+    }
+  });
+
   document.querySelectorAll('tr[data-url]').forEach(row => {
     row.addEventListener('click', () => { window.location = row.dataset.url; });
   });

@@ -171,48 +171,35 @@
 
   });
 </script>
- <script>
-
+<script>
   const areaSelect = document.getElementById('id_area');
-
   const categoriaSelect = document.getElementById('id_categoria');
- 
+
   const todasCategorias = [
-
     {% for cat in categorias %}
-
-    { id: {{ cat.id }}, nombre: '{{ cat.nombre }}', area: {{ cat.area_id|default:'null' }} },
-
+    { id: {{ cat.id }}, nombre: '{{ cat.nombre }}', area: {% if cat.area_id %}{{ cat.area_id }}{% else %}null{% endif %} },
     {% endfor %}
-
   ];
- 
+
   function filtrarCategorias() {
-
     const areaId = parseInt(areaSelect.value);
-
     categoriaSelect.innerHTML = '<option value="">---------</option>';
- 
+
+    if (!areaId) {
+      return;
+    }
+
     todasCategorias.forEach(cat => {
-
-      if (!areaId || cat.area === areaId) {
-
+      if (cat.area === areaId) {
         const option = document.createElement('option');
-
         option.value = cat.id;
-
         option.textContent = cat.nombre;
-
         categoriaSelect.appendChild(option);
-
       }
-
     });
-
   }
- 
-  areaSelect.addEventListener('change', filtrarCategorias);
 
+  areaSelect.addEventListener('change', filtrarCategorias);
   filtrarCategorias();
 </script>
  

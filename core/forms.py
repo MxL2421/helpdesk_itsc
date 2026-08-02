@@ -17,7 +17,6 @@ class TicketForm(forms.ModelForm):
         widget=forms.SelectMultiple(attrs={'style': 'width: 100%'})
     )
 
-    # Campos adicionales para técnicos
     crear_a_nombre_de = forms.ModelChoiceField(
         queryset=Usuario.objects.all(),
         required=False,
@@ -34,6 +33,17 @@ class TicketForm(forms.ModelForm):
         choices=[('', 'Selecciona prioridad'), ('baja', 'Baja'), ('media', 'Media'), ('alta', 'Alta')],
         required=False,
         label='Prioridad'
+    )
+
+    area = forms.ModelChoiceField(
+        queryset=Area.objects.all(),
+        required=False,
+        label='Área',
+        empty_label='Selecciona un área',
+        widget=forms.Select(attrs={
+            'class': 'w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-red-500',
+            'id': 'id_area',
+        })
     )
 
     class Meta:
@@ -56,6 +66,7 @@ class TicketForm(forms.ModelForm):
             }),
             'categoria': forms.Select(attrs={
                 'class': 'w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-red-500',
+                'id': 'id_categoria',
             }),
         }
 
@@ -130,9 +141,29 @@ class ReasignarTicketForm(forms.ModelForm):
 # Redirección de ticket (cambio de categoría)
 
 class RedirigirTicketForm(forms.ModelForm):
+    area = forms.ModelChoiceField(
+        queryset=Area.objects.all(),
+        required=False,
+        label='Área',
+        empty_label='Selecciona un área',
+        widget=forms.Select(attrs={
+            'class': 'w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-red-500',
+            'id': 'id_area_redirigir',
+        })
+    )
+
     class Meta:
         model = Ticket
         fields = ['categoria']
+        labels = {
+            'categoria': 'Categoría',
+        }
+        widgets = {
+            'categoria': forms.Select(attrs={
+                'class': 'w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-red-500',
+                'id': 'id_categoria_redirigir',
+            }),
+        }
 
 # Comentarios privados/públicos
 
@@ -167,10 +198,8 @@ CARRERAS_CHOICES = [
     ('Técnico en Desarrollo de Software', 'Técnico en Desarrollo de Software'),
     ('Técnico en Redes y Telecomunicaciones', 'Técnico en Redes y Telecomunicaciones'),
     ('Técnico en Soporte Técnico', 'Técnico en Soporte Técnico'),
-    ('Técnico en Administración de Empresas', 'Técnico en Administración de Empresas'),
-    ('Técnico en Contabilidad', 'Técnico en Contabilidad'),
-    ('Técnico en Enfermería', 'Técnico en Enfermería'),
-    ('Técnico en Gastronomía', 'Técnico en Gastronomía'),
+    ('Técnico en Gestión de Cocina', 'Técnico en Gestión de Cocina'),
+    
 ]
 
 class CrearUsuarioForm(forms.ModelForm):
@@ -246,7 +275,7 @@ class EditarUsuarioForm(forms.ModelForm):
         }
         widgets = {
             'areas': forms.CheckboxSelectMultiple,
-            'carreras': forms.Select(choices=CARRERAS_CHOICES)
+            'carrera': forms.Select(choices=CARRERAS_CHOICES),
         }
 
 

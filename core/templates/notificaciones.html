@@ -6,13 +6,17 @@
   <h1 class="text-center text-red-600 font-semibold mb-4">Notificaciones</h1>
 
   {% for notif in notificaciones %}
-    <div class="bg-white rounded p-3 mb-2 border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
-      <p class="font-medium text-sm text-gray-800">{{ notif.asunto }}</p>
-      <p class="text-sm text-gray-600 mt-1">{{ notif.mensaje }}</p>
-      <p class="text-xs text-gray-400 mt-1">{{ notif.fecha_envio|date:"d/m/Y H:i" }}</p>
-    </div>
-  {% empty %}
-    <p class="text-center text-gray-500 text-sm">No tienes notificaciones nuevas.</p>
-  {% endfor %}
+  <a href="{% if notif.ticket %}{% url 'detalle_ticket' notif.ticket.id %}{% else %}#{% endif %}"
+    class="block bg-white rounded p-3 mb-2 border border-gray-200 shadow-sm hover:shadow-md hover:border-red-300 transition">
+    <p class="font-medium text-sm text-gray-800">{{ notif.asunto }}</p>
+    <p class="text-sm text-gray-600 mt-1">{{ notif.mensaje }}</p>
+    <p class="text-xs text-gray-400 mt-1">{{ notif.fecha_envio|date:"d/m/Y H:i" }}</p>
+    {% if notif.ticket %}
+      <p class="text-xs text-red-500 mt-1">Ver ticket #{{ notif.ticket.id }} →</p>
+    {% endif %}
+  </a>
+{% empty %}
+  <p class="text-center text-gray-500 text-sm">No tienes notificaciones nuevas.</p>
+{% endfor %}
 </div>
 {% endblock %}

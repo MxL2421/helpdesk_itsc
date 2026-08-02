@@ -274,7 +274,6 @@ def dashboard(request):
             estado__in=['nuevo', 'en_revision', 'en_progreso'],
             fecha_limite__isnull=False,
             fecha_limite__lte=ahora + timedelta(hours=2),
-            fecha_limite__gte=ahora
         ).count()
 
         expirados = tickets_base.filter(
@@ -314,11 +313,25 @@ def dashboard(request):
 
     # ── ESTADÍSTICAS TÉCNICO ────────────────────────────────────────────────
     else:
+        import json
         mis_tickets = Ticket.objects.filter(tecnico=request.user)
         total = mis_tickets.count()
         pendientes = mis_tickets.filter(estado__in=['nuevo', 'en_revision']).count()
         en_progreso = mis_tickets.filter(estado='en_progreso').count()
         cerrados_por_mi = mis_tickets.filter(estado='cerrado').count()
+
+        porcentaje_resolucion = f"{round((cerrados_por_mi / total * 100), 1):.1f}".replace(',', '.') if total > 0 else "0.0"
+
+        prioridad_data = {
+            'Alta': mis_tickets.filter(prioridad='alta').count(),
+            'Media': mis_tickets.filter(prioridad='media').count(),
+            'Baja': mis_tickets.filter(prioridad='baja').count(),
+            'Sin asignar': mis_tickets.filter(prioridad__isnull=True).count(),
+        }
+
+        ticket_mas_antiguo = mis_tickets.filter(
+            estado__in=['nuevo', 'en_revision', 'en_progreso']
+        ).order_by('fecha_creacion').first()
 
         ultimos_tickets = mis_tickets.order_by('-fecha_creacion')[:10]
 
@@ -346,6 +359,9 @@ def dashboard(request):
             'pendientes': pendientes,
             'en_progreso': en_progreso,
             'cerrados_por_mi': cerrados_por_mi,
+            'porcentaje_resolucion': porcentaje_resolucion,
+            'prioridad_data': json.dumps(prioridad_data),
+            'ticket_mas_antiguo': ticket_mas_antiguo,
             'ultimos_tickets': ultimos_tickets,
             'por_expirar': por_expirar,
             'expirados': expirados,
@@ -455,12 +471,12 @@ def crear_ticket(request):
 def agregar_adjunto(request, ticket_id):
     ticket = get_object_or_404(Ticket, id=ticket_id)
     user = request.user
-
+    
     es_creador = ticket.creador == user
     es_tecnico_o_admin = user.rol in ['tecnico', 'administrador']
     esta_etiquetado = ticket.ticketetiquetado_set.filter(usuario=user).exists()
 
-    if not (es_creador or es_tecnico_o_admin or esta_etiquetado):
+    if not (es_creador or es_tecnico_o_admin):
         return HttpResponseForbidden('No tienes permiso para agregar adjuntos a este ticket.')
 
     if request.method == 'POST':
@@ -503,7 +519,19 @@ def lista_tickets(request):
         else:
             tickets = Ticket.objects.none()
     else:
-        tickets = Ticket.objects.filter(creador=request.user)
+        tickets_propios = Ticket.objects.filter(creador=request.user)
+        tickets_etiquetados = Ticket.objects.filter(
+            ticketetiquetado__usuario=request.user
+        )
+        tickets = (tickets_propios | tickets_etiquetados).distinct()
+
+    # Siempre calcular tickets etiquetados
+    tickets_etiquetados_ids = list(
+        Ticket.objects.filter(
+            ticketetiquetado__usuario=request.user
+        ).values_list('id', flat=True)
+    )
+
 
     # Buscador
     busqueda = request.GET.get('q')
@@ -570,6 +598,7 @@ def lista_tickets(request):
         'busqueda_actual': busqueda,
         'categorias': categorias,
         'tecnicos': tecnicos,
+        'tickets_etiquetados_ids': tickets_etiquetados_ids,
     })
 
 @login_required
@@ -874,6 +903,8 @@ def redirigir_ticket(request, ticket_id):
         messages.error(request, 'No se puede redirigir un ticket cerrado.')
         return redirect('detalle_ticket', ticket_id=ticket.id)
 
+    categorias = Categoria.objects.select_related('area').all()
+
     if request.method == 'POST':
         categoria_anterior = ticket.categoria
         form = RedirigirTicketForm(request.POST, instance=ticket)
@@ -894,7 +925,11 @@ def redirigir_ticket(request, ticket_id):
     else:
         form = RedirigirTicketForm(instance=ticket)
 
-    return render(request, 'tickets/redirigir.html', {'form': form, 'ticket': ticket})
+    return render(request, 'tickets/redirigir.html', {
+        'form': form,
+        'ticket': ticket,
+        'categorias': categorias,
+    })
 
 # ─── PANEL ADMINISTRATIVO — USUARIOS ──────────────────────────────────────────
 
