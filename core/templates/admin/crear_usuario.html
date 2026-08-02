@@ -1,72 +1,12 @@
 {% extends 'base.html' %}
 {% block title %}Crear Usuario{% endblock %}
-
+ 
 {% block content %}
 <div class="border border-gray-300 rounded-lg p-4 bg-gray-100 max-w-2xl mx-auto m-8">
   <h1 class="text-red-600 font-semibold mb-4">Crear Usuario</h1>
-  <form method="post">
+  <form method="post" class="form-usuario">
     {% csrf_token %}
-
-    <div class="mb-3">
-      <label class="block text-sm font-medium text-gray-700 mb-1">{{ form.nombre.label }}</label>
-      {{ form.nombre }}
-    </div>
-
-    <div class="mb-3">
-      <label class="block text-sm font-medium text-gray-700 mb-1">{{ form.apellido.label }}</label>
-      {{ form.apellido }}
-    </div>
-
-    <div class="mb-3">
-      <label class="block text-sm font-medium text-gray-700 mb-1">{{ form.correo.label }}</label>
-      {{ form.correo }}
-    </div>
-
-    <div class="mb-3">
-      <label class="block text-sm font-medium text-gray-700 mb-1">{{ form.rol.label }}</label>
-      {{ form.rol }}
-    </div>
-
-    <div id="contenedor-matricula" class="mb-3">
-      <label class="block text-sm font-medium text-gray-700 mb-1">{{ form.matricula.label }}</label>
-      {{ form.matricula }}
-    </div>
-
-    <div id="contenedor-carrera" class="mb-3">
-      <label class="block text-sm font-medium text-gray-700 mb-1">{{ form.carrera.label }}</label>
-      {{ form.carrera }}
-    </div>
-
-    <div id="contenedor-areas" class="mb-3">
-      <label class="block text-sm font-medium text-gray-700 mb-2">{{ form.areas.label }}</label>
-      {% for checkbox in form.areas %}
-        <div class="flex items-center gap-2 mb-1">
-          {{ checkbox.tag }}
-          <label for="{{ checkbox.id_for_label }}" class="text-sm text-gray-700">{{ checkbox.choice_label }}</label>
-        </div>
-      {% endfor %}
-    </div>
-
-    <div class="mb-3">
-      <label class="block text-sm font-medium text-gray-700 mb-1">{{ form.password1.label }}</label>
-      {{ form.password1 }}
-    </div>
-
-    <div class="mb-3">
-      <label class="block text-sm font-medium text-gray-700 mb-1">{{ form.password2.label }}</label>
-      {{ form.password2 }}
-    </div>
-
-    {% if form.errors %}
-      <div class="text-red-600 text-sm mb-3">
-        {% for field in form %}
-          {% for error in field.errors %}
-            <p>{{ error }}</p>
-          {% endfor %}
-        {% endfor %}
-      </div>
-    {% endif %}
-
+    {{ form.as_p }}
     <div class="flex gap-2 mt-4">
       <button type="submit" onclick="this.disabled=true; this.form.submit();"
         class="bg-red-600 text-white px-4 py-2 rounded text-sm hover:bg-red-700">
@@ -78,32 +18,85 @@
     </div>
   </form>
 </div>
-
+ 
+<style>
+  .form-usuario p {
+    margin-bottom: 1.1rem;
+  }
+  .form-usuario label {
+    display: block;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #374151;
+    margin-bottom: 0.3rem;
+  }
+  .form-usuario input,
+  .form-usuario select {
+    width: 100%;
+    max-width: 320px;
+    border: 1px solid #d1d5db;
+    border-radius: 0.375rem;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.875rem;
+  }
+  .form-usuario input:focus,
+  .form-usuario select:focus {
+    outline: none;
+    border-color: #dc2626;
+    box-shadow: 0 0 0 2px rgba(220, 38, 38, 0.25);
+  }
+  .form-usuario .helptext {
+    display: block;
+    font-size: 0.75rem;
+    color: #6b7280;
+    margin-top: 0.25rem;
+  }
+  .form-usuario ul.errorlist {
+    color: #dc2626;
+    font-size: 0.75rem;
+    margin: 0.25rem 0 0 0;
+    padding-left: 0;
+    list-style: none;
+  }
+</style>
+ 
 <script>
   function actualizarCampos() {
     const rol = document.querySelector('[name="rol"]').value;
-
-    const contenedorMat = document.getElementById('contenedor-matricula');
-    const contenedorCarr = document.getElementById('contenedor-carrera');
-    const contenedorAreas = document.getElementById('contenedor-areas');
-
+ 
+    const filaNombre = document.getElementById('id_nombre')?.closest('p');
+    const filaApellido = document.getElementById('id_apellido')?.closest('p');
+    const filaCorreo = document.getElementById('id_correo')?.closest('p');
+    const filaPassword1 = document.getElementById('id_password1')?.closest('p');
+    const filaPassword2 = document.getElementById('id_password2')?.closest('p');
+    const filaMat = document.getElementById('id_matricula')?.closest('p');
+    const filaCarr = document.getElementById('id_carrera')?.closest('p');
+    const filaAreas = document.getElementById('id_areas')?.closest('ul')?.parentElement ||
+                      document.getElementById('id_areas')?.closest('p');
+ 
     // Ocultar todo primero
-    contenedorMat.style.display = 'none';
-    contenedorCarr.style.display = 'none';
-    contenedorAreas.style.display = 'none';
-
-  // Mostrar según rol
-  if (rol === 'estudiante') {
-    contenedorMat.style.display = '';
-    contenedorCarr.style.display = '';
-  } else if (rol === 'tecnico') {
-    contenedorAreas.style.display = '';
+    if (filaMat) filaMat.style.display = 'none';
+    if (filaCarr) filaCarr.style.display = 'none';
+    if (filaAreas) filaAreas.style.display = 'none';
+ 
+    // Mostrar según rol
+    if (rol === 'estudiante') {
+      if (filaMat) filaMat.style.display = '';
+      if (filaCarr) filaCarr.style.display = '';
+    } else if (rol === 'tecnico') {
+      if (filaAreas) filaAreas.style.display = '';
+    } else if (rol === 'maestro') {
+      if (filaCarr) filaCarr.style.display = '';
+    }
+    // administrador y sin rol: solo nombre, apellido, correo y contraseña
   }
-  
-}
-
+ 
   document.querySelector('[name="rol"]').addEventListener('change', actualizarCampos);
   actualizarCampos();
 </script>
-
+ 
+ 
+// hola feo
+ 
+ 
 {% endblock %}
