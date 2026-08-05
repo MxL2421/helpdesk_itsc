@@ -160,3 +160,4 @@ AUTH_USER_MODEL = 'core.Usuario'
 LOGIN_URL = '/login/'
 
 STATICFILES_STORAGE = 'django.contrib.staticfiles.storage.StaticFilesStorage'
+CSRF_TRUSTED_ORIGINS = ['https://helpdeskitsc-production.up.railway.app']
