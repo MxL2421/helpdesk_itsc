@@ -40,8 +40,8 @@ SECRET_KEY = os.getenv('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
 
-DEBUG = False
-ALLOWED_HOSTS = ['mxl2421.pythonanywhere.com']
+DEBUG = True
+ALLOWED_HOSTS = []
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 

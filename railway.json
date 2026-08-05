@@ -1,0 +1,9 @@
+{
+  "build": {
+    "builder": "NIXPACKS"
+  },
+  "deploy": {
+    "startCommand": "gunicorn helpdesk_itsc.wsgi --log-file -",
+    "healthcheckPath": "/login/"
+  }
+}
