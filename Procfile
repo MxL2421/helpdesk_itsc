@@ -1,1 +1,1 @@
-web: gunicorn helpdesk_itsc.wsgi --log-file -
+web: /opt/venv/bin/python manage.py collectstatic --noinput && /opt/venv/bin/gunicorn helpdesk_itsc.wsgi --log-file -
