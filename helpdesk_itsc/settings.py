@@ -15,7 +15,8 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 import os
 from dotenv import load_dotenv
 from pathlib import Path
-
+import pymysql
+pymysql.install_as_MySQLdb()
 
 # Carga las variables de entorno desde el archivo .env
 load_dotenv()

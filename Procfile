@@ -1,0 +1,1 @@
+web: gunicorn helpdesk_itsc.wsgi --log-file -
