@@ -3,7 +3,7 @@
     "builder": "NIXPACKS"
   },
   "deploy": {
-    "startCommand": "gunicorn helpdesk_itsc.wsgi --log-file -",
+    "startCommand": "/opt/venv/bin/python manage.py collectstatic --noinput && /opt/venv/bin/gunicorn helpdesk_itsc.wsgi --log-file -",
     "healthcheckPath": "/login/"
   }
 }
