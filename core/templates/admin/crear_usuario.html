@@ -62,7 +62,7 @@
  
 <script>
   function actualizarCampos() {
-    const rol = document.querySelector('[name="rol"]').value;
+    const rol = document.querySelector('[name="rol"]')?.value;
 
     const filaMat = document.getElementById('id_matricula')?.closest('p');
     const filaCarr = document.getElementById('id_carrera')?.closest('p');
@@ -80,8 +80,14 @@
     }
   }
 
-  document.querySelector('[name="rol"]').addEventListener('change', actualizarCampos);
-  actualizarCampos();
+  document.addEventListener('DOMContentLoaded', function () {
+    const rol = document.querySelector('[name="rol"]');
+
+    if (rol) {
+      rol.addEventListener('change', actualizarCampos);
+      actualizarCampos();
+    }
+  });
 </script>
  
 {% endblock %}
