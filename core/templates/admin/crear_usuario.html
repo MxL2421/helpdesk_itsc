@@ -66,27 +66,18 @@
 
     const filaMat = document.getElementById('id_matricula')?.closest('p');
     const filaCarr = document.getElementById('id_carrera')?.closest('p');
-    const filaAreas = document.getElementById('id_areas')?.closest('ul')?.parentElement ||
-                      document.getElementById('id_areas')?.closest('p');
+    const filaAreas = document.getElementById('id_areas')?.closest('p');
 
-    // Ocultar todo primero
     if (filaMat) filaMat.style.display = 'none';
     if (filaCarr) filaCarr.style.display = 'none';
     if (filaAreas) filaAreas.style.display = 'none';
 
-    // Estudiante: matrícula y carrera
     if (rol === 'estudiante') {
       if (filaMat) filaMat.style.display = '';
       if (filaCarr) filaCarr.style.display = '';
-    }
-
-    // Técnico: áreas
-    else if (rol === 'tecnico') {
+    } else if (rol === 'tecnico') {
       if (filaAreas) filaAreas.style.display = '';
     }
-
-    // Maestro y administrador:
-    // no muestran matrícula, carrera ni áreas
   }
 
   document.querySelector('[name="rol"]').addEventListener('change', actualizarCampos);
