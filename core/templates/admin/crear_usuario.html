@@ -62,32 +62,30 @@
  
 <script>
   function actualizarCampos() {
-    const rol = document.querySelector('[name="rol"]')?.value;
+    const rol = document.querySelector('[name="rol"]').value;
 
-    const filaMat = document.getElementById('id_matricula')?.closest('p');
-    const filaCarr = document.getElementById('id_carrera')?.closest('p');
-    const filaAreas = document.getElementById('id_areas')?.closest('p');
+    const filaMat = document.getElementById('id_matricula')?.closest('div.campo-form');
+    const filaCarr = document.getElementById('id_carrera')?.closest('div.campo-form');
+    const filaAreas = document.getElementById('id_areas')?.closest('div.campo-form');
 
+    // Ocultar todo
     if (filaMat) filaMat.style.display = 'none';
     if (filaCarr) filaCarr.style.display = 'none';
     if (filaAreas) filaAreas.style.display = 'none';
 
-    if (rol === 'estudiante') {
-      if (filaMat) filaMat.style.display = '';
-      if (filaCarr) filaCarr.style.display = '';
-    } else if (rol === 'tecnico') {
-      if (filaAreas) filaAreas.style.display = '';
-    }
+  // Mostrar según rol
+  if (rol === 'estudiante') {
+    if (filaMat) filaMat.style.display = '';
+    if (filaCarr) filaCarr.style.display = '';
+  } else if (rol === 'tecnico') {
+    if (filaAreas) filaAreas.style.display = '';
+  }
   }
 
-  document.addEventListener('DOMContentLoaded', function () {
-    const rol = document.querySelector('[name="rol"]');
+  // administrador y sin rol: solo nombre, apellido, correo
 
-    if (rol) {
-      rol.addEventListener('change', actualizarCampos);
-      actualizarCampos();
-    }
-  });
+  document.querySelector('[name="rol"]').addEventListener('change', actualizarCampos);
+  actualizarCampos();
 </script>
  
 {% endblock %}
