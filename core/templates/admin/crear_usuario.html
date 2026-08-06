@@ -63,38 +63,34 @@
 <script>
   function actualizarCampos() {
     const rol = document.querySelector('[name="rol"]').value;
- 
-    const filaNombre = document.getElementById('id_nombre')?.closest('p');
-    const filaApellido = document.getElementById('id_apellido')?.closest('p');
-    const filaCorreo = document.getElementById('id_correo')?.closest('p');
-    const filaPassword1 = document.getElementById('id_password1')?.closest('p');
-    const filaPassword2 = document.getElementById('id_password2')?.closest('p');
+
     const filaMat = document.getElementById('id_matricula')?.closest('p');
     const filaCarr = document.getElementById('id_carrera')?.closest('p');
     const filaAreas = document.getElementById('id_areas')?.closest('ul')?.parentElement ||
                       document.getElementById('id_areas')?.closest('p');
- 
+
     // Ocultar todo primero
     if (filaMat) filaMat.style.display = 'none';
     if (filaCarr) filaCarr.style.display = 'none';
     if (filaAreas) filaAreas.style.display = 'none';
- 
-    // Mostrar según rol
+
+    // Estudiante: matrícula y carrera
     if (rol === 'estudiante') {
       if (filaMat) filaMat.style.display = '';
       if (filaCarr) filaCarr.style.display = '';
-    } else if (rol === 'tecnico') {
-      if (filaAreas) filaAreas.style.display = '';
-    } else if (rol === 'maestro') {
-      if (filaCarr) filaCarr.style.display = '';
     }
-    // administrador y sin rol: solo nombre, apellido, correo y contraseña
+
+    // Técnico: áreas
+    else if (rol === 'tecnico') {
+      if (filaAreas) filaAreas.style.display = '';
+    }
+
+    // Maestro y administrador:
+    // no muestran matrícula, carrera ni áreas
   }
- 
+
   document.querySelector('[name="rol"]').addEventListener('change', actualizarCampos);
   actualizarCampos();
 </script>
- 
- 
  
 {% endblock %}
