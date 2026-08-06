@@ -66,22 +66,33 @@
 
     const filaMat = document.getElementById('id_matricula')?.closest('p');
     const filaCarr = document.getElementById('id_carrera')?.closest('p');
-    const filaAreas = document.getElementById('id_areas')?.closest('p');
+
+    const areas = document.getElementById('id_areas');
+    const labelAreas = document.querySelector('label[for="id_areas"]');
+    const filaAreas = labelAreas?.closest('p');
 
     if (filaMat) filaMat.style.display = 'none';
     if (filaCarr) filaCarr.style.display = 'none';
     if (filaAreas) filaAreas.style.display = 'none';
+    if (areas) areas.style.display = 'none';
 
     if (rol === 'estudiante') {
       if (filaMat) filaMat.style.display = '';
       if (filaCarr) filaCarr.style.display = '';
     } else if (rol === 'tecnico') {
       if (filaAreas) filaAreas.style.display = '';
+      if (areas) areas.style.display = '';
     }
   }
 
-  document.querySelector('[name="rol"]').addEventListener('change', actualizarCampos);
-  actualizarCampos();
+  document.addEventListener('DOMContentLoaded', function () {
+    const rol = document.querySelector('[name="rol"]');
+
+    if (rol) {
+      rol.addEventListener('change', actualizarCampos);
+      actualizarCampos();
+    }
+  });
 </script>
  
 {% endblock %}
